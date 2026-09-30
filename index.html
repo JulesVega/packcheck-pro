@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PackCheck Pro - (A MORALEJO BRAND)</title>
   
   <!-- Embedded PWA Manifest -->
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22PackCheck%20Pro%22%2C%22short_name%22%3A%22PackCheck%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%230284c7%22%7D">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22PackCheck%20Pro%22%2C%22short_name%22%3A%22PackCheck%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%230284c7%22%7D">
   <meta name="theme-color" content="#0f172a">
   
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS with class-based darkMode support -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -58,25 +58,49 @@
     }
 
     /* Animación Glow Spotlight para localización rápida de EAN */
-    @keyframes spotlightPulse {
+    @keyframes spotlightPulseLight {
       0% {
         transform: scale(1.02);
-        box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.65), 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 0 0 5px rgba(2, 132, 199, 0.45), 0 10px 25px -5px rgba(2, 132, 199, 0.3);
         background-color: #f0f9ff;
       }
       50% {
-        box-shadow: 0 0 0 10px rgba(14, 165, 233, 0.35), 0 25px 30px -5px rgba(14, 165, 233, 0.35);
+        transform: scale(1.025);
+        box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.25), 0 15px 30px -5px rgba(2, 132, 199, 0.4);
         background-color: #e0f2fe;
       }
       100% {
         transform: scale(1);
-        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.5);
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.6), 0 8px 16px -4px rgba(0, 0, 0, 0.1);
       }
     }
 
-    .item-spotlight {
-      animation: spotlightPulse 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    @keyframes spotlightPulseDark {
+      0% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.65), 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        background-color: #0c4a6e;
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(14, 165, 233, 0.4), 0 25px 30px -5px rgba(14, 165, 233, 0.4);
+        background-color: #075985;
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.7);
+      }
+    }
+
+    .html-light .item-spotlight {
+      animation: spotlightPulseLight 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       border-color: #0284c7 !important;
+      position: relative;
+      z-index: 10;
+    }
+
+    .dark .item-spotlight {
+      animation: spotlightPulseDark 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      border-color: #38bdf8 !important;
       position: relative;
       z-index: 10;
     }
@@ -95,13 +119,16 @@
         top: 0;
         width: 100%;
         display: block !important;
+        background: #fff !important;
+        color: #000 !important;
       }
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white transition-colors duration-200">
 
-  <header class="bg-slate-950 text-white sticky top-0 z-30 shadow-lg border-b border-slate-800">
+  <!-- Header Industrial con Marca Moralejo y Toggle Claro/Oscuro -->
+  <header class="bg-slate-900 dark:bg-slate-950 text-white sticky top-0 z-30 shadow-md border-b border-slate-800 transition-colors">
     <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between">
       
       <!-- Brand & Subtitle -->
@@ -112,7 +139,7 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 class="font-black text-lg sm:text-xl tracking-tight leading-none text-white">PackCheck <span class="text-sky-400">Pro</span></h1>
-            <span class="text-[10px] bg-slate-800 text-sky-300 font-extrabold px-1.5 py-0.5 rounded border border-slate-700 font-mono-code">v2.5</span>
+            <span class="text-[10px] bg-slate-800 text-sky-300 font-extrabold px-1.5 py-0.5 rounded border border-slate-700 font-mono-code">v2.6</span>
           </div>
           <div class="flex items-center gap-1.5 mt-1">
             <span class="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase drop-shadow-sm font-mono-code">(A MORALEJO BRAND)</span>
@@ -120,12 +147,20 @@
         </div>
       </div>
 
-      <!-- Action Bar -->
+      <!-- Action Bar & Controls -->
       <div class="flex items-center space-x-1.5 sm:space-x-2">
-        <div id="hidStatusIndicator" class="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-emerald-400">
+        <!-- Indicador Láser PDA -->
+        <div id="hidStatusIndicator" class="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs font-semibold text-emerald-400">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>Láser PDA Activo</span>
         </div>
+
+        <!-- Selector de Tema Claro / Oscuro -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" title="Cambiar tema Claro/Oscuro" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition active:scale-95 shadow-sm">
+          <i data-lucide="sun" id="themeIconSun" class="w-4 h-4"></i>
+          <i data-lucide="moon" id="themeIconMoon" class="w-4 h-4 hidden"></i>
+          <span id="themeLabel" class="hidden sm:inline">Modo Claro</span>
+        </button>
 
         <!-- Botón Generar QR de Orden -->
         <button onclick="openQrGeneratorModal()" id="btnGenerateQr" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition active:scale-95 shadow-md">
@@ -154,6 +189,7 @@
     </div>
   </header>
 
+  <!-- Main Container -->
   <main class="max-w-7xl mx-auto p-3 sm:p-5 flex-1 flex flex-col w-full space-y-4">
 
     <!-- Feedback Banner de Escaneo / Alertas de Audio -->
@@ -165,23 +201,23 @@
           <div id="scanAlertMessage" class="text-xs font-medium truncate"></div>
         </div>
       </div>
-      <button onclick="dismissScanAlert()" class="text-slate-400 hover:text-white p-1 ml-2">
+      <button onclick="dismissScanAlert()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 ml-2">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
 
-    <!-- Visor Retráctil de Cámara (Para smartphones o PDAs sin cabezal láser) -->
-    <section id="cameraScannerSection" class="hidden bg-slate-950 rounded-2xl p-4 shadow-2xl border border-slate-800">
+    <!-- Visor Retráctil de Cámara (Para smartphones o tablets) -->
+    <section id="cameraScannerSection" class="hidden bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-200 dark:border-slate-800">
       <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center space-x-2 text-white">
-          <i data-lucide="scan-line" class="w-5 h-5 text-sky-400 animate-pulse"></i>
+        <div class="flex items-center space-x-2 text-slate-900 dark:text-white">
+          <i data-lucide="scan-line" class="w-5 h-5 text-sky-600 dark:text-sky-400 animate-pulse"></i>
           <span class="font-bold text-sm">Escáner Activo por Cámara</span>
         </div>
         <div class="flex items-center space-x-2">
-          <select id="cameraSourceSelect" onchange="changeCameraSource(this.value)" class="text-xs bg-slate-900 text-slate-200 border border-slate-700 rounded-lg p-1.5 focus:ring-1 focus:ring-sky-500 font-medium">
+          <select id="cameraSourceSelect" onchange="changeCameraSource(this.value)" class="text-xs bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg p-1.5 focus:ring-1 focus:ring-sky-500 font-medium">
             <option value="">Detectando cámaras...</option>
           </select>
-          <button onclick="toggleCameraScanner()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">
+          <button onclick="toggleCameraScanner()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -189,84 +225,84 @@
       <div class="relative w-full max-w-sm mx-auto overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center border-2 border-sky-500/50">
         <div id="reader" class="w-full h-full"></div>
       </div>
-      <p class="text-center text-xs text-slate-400 mt-2">Apunta hacia el código de barras EAN o al código QR de la Orden</p>
+      <p class="text-center text-xs text-slate-500 dark:text-slate-400 mt-2">Apunta hacia el código de barras EAN o al código QR de la Orden</p>
     </section>
 
     <!-- Indicador de Spotlight Activo (Guía visual al tocar EAN) -->
-    <div id="spotlightIndicator" class="hidden bg-sky-950/70 border border-sky-600/50 rounded-xl p-3 items-center justify-between shadow-md transition">
-      <div class="flex items-center space-x-2 text-sky-200 min-w-0">
+    <div id="spotlightIndicator" class="hidden bg-sky-50 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-600/50 rounded-xl p-3 items-center justify-between shadow-sm transition">
+      <div class="flex items-center space-x-2 text-sky-900 dark:text-sky-200 min-w-0">
         <span class="flex h-3 w-3 relative shrink-0">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
         </span>
-        <span class="text-xs font-bold text-sky-300 shrink-0">Artículo Localizado:</span>
-        <span id="spotlightDesc" class="text-xs font-semibold text-white truncate max-w-md"></span>
+        <span class="text-xs font-bold text-sky-700 dark:text-sky-300 shrink-0">Artículo Localizado:</span>
+        <span id="spotlightDesc" class="text-xs font-semibold text-slate-900 dark:text-white truncate max-w-md"></span>
       </div>
-      <button onclick="clearSpotlight()" class="text-xs font-bold text-sky-300 hover:text-white bg-sky-900/60 hover:bg-sky-800 px-2.5 py-1 rounded-lg transition shrink-0 ml-2">
+      <button onclick="clearSpotlight()" class="text-xs font-bold text-sky-800 dark:text-sky-300 hover:text-sky-950 dark:hover:text-white bg-sky-200/70 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 px-2.5 py-1 rounded-lg transition shrink-0 ml-2">
         Quitar Foco
       </button>
     </div>
 
     <section class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/70 shadow-sm flex items-center justify-between">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Referencias</span>
-          <div class="text-xl sm:text-2xl font-black text-white" id="kpiRefsSummary">0 / 0</div>
-          <span class="text-[11px] text-sky-400 font-semibold" id="kpiRefsPercent">0% cotejadas</span>
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Referencias</span>
+          <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="kpiRefsSummary">0 / 0</div>
+          <span class="text-[11px] text-sky-600 dark:text-sky-400 font-semibold" id="kpiRefsPercent">0% cotejadas</span>
         </div>
-        <div class="p-2.5 bg-slate-900/80 text-sky-400 border border-slate-700/50 rounded-xl">
+        <div class="p-2.5 bg-sky-50 dark:bg-slate-950 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-800 rounded-xl">
           <i data-lucide="boxes" class="w-5 h-5 sm:w-6 sm:h-6"></i>
         </div>
       </div>
 
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/70 shadow-sm flex items-center justify-between">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Uds. Físicas</span>
-          <div class="text-xl sm:text-2xl font-black text-white" id="kpiUnitsSummary">0 / 0</div>
-          <span class="text-[11px] text-amber-400 font-semibold" id="kpiRemainingUnits">0 faltantes</span>
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Uds. Físicas</span>
+          <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="kpiUnitsSummary">0 / 0</div>
+          <span class="text-[11px] text-amber-600 dark:text-amber-400 font-semibold" id="kpiRemainingUnits">0 faltantes</span>
         </div>
-        <div class="p-2.5 bg-slate-900/80 text-amber-400 border border-slate-700/50 rounded-xl">
+        <div class="p-2.5 bg-amber-50 dark:bg-slate-950 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-slate-800 rounded-xl">
           <i data-lucide="layers" class="w-5 h-5 sm:w-6 sm:h-6"></i>
         </div>
       </div>
 
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/70 shadow-sm flex items-center justify-between">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Completadas</span>
-          <div class="text-xl sm:text-2xl font-black text-emerald-400" id="kpiCompletedCount">0</div>
-          <span class="text-[11px] text-emerald-500 font-semibold">100% OK</span>
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Completadas</span>
+          <div class="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400" id="kpiCompletedCount">0</div>
+          <span class="text-[11px] text-emerald-600 dark:text-emerald-500 font-semibold">100% OK</span>
         </div>
-        <div class="p-2.5 bg-slate-900/80 text-emerald-400 border border-slate-700/50 rounded-xl">
+        <div class="p-2.5 bg-emerald-50 dark:bg-slate-950 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-slate-800 rounded-xl">
           <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6"></i>
         </div>
       </div>
 
-      <div class="bg-slate-800/80 rounded-2xl p-3.5 border border-slate-700/70 shadow-sm flex items-center justify-between">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
         <div>
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Discrepancias</span>
-          <div class="text-xl sm:text-2xl font-black text-rose-400" id="kpiDiscrepanciesCount">0</div>
-          <span class="text-[11px] text-rose-400 font-semibold">Excesos detectados</span>
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Discrepancias</span>
+          <div class="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400" id="kpiDiscrepanciesCount">0</div>
+          <span class="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">Excesos detectados</span>
         </div>
-        <div class="p-2.5 bg-slate-900/80 text-rose-400 border border-slate-700/50 rounded-xl">
+        <div class="p-2.5 bg-rose-50 dark:bg-slate-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-slate-800 rounded-xl">
           <i data-lucide="alert-triangle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
         </div>
       </div>
     </section>
 
     <!-- Barra de Progreso Global del Albarán -->
-    <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700/70 shadow-sm space-y-2">
+    <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
       <div class="flex justify-between items-center text-xs font-semibold">
-        <span class="text-slate-300 flex items-center gap-1.5 font-bold">
-          <i data-lucide="activity" class="w-4 h-4 text-sky-400"></i> Progreso General de Preparación
+        <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-bold">
+          <i data-lucide="activity" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i> Progreso General de Preparación
         </span>
-        <span id="progressBarText" class="font-mono-code font-black text-sky-400 text-sm">0%</span>
+        <span id="progressBarText" class="font-mono-code font-black text-sky-600 dark:text-sky-400 text-sm">0%</span>
       </div>
-      <div class="w-full bg-slate-950 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-800">
+      <div class="w-full bg-slate-200 dark:bg-slate-950 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-300 dark:border-slate-800">
         <div id="progressBarFill" class="bg-gradient-to-r from-sky-500 via-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-300 w-0"></div>
       </div>
     </div>
 
-    <div class="bg-slate-800/90 rounded-2xl p-3 sm:p-4 border border-slate-700/80 shadow-md flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
       
       <!-- Barra de Búsqueda Manual / Escaneo Manual -->
       <div class="flex-1 relative">
@@ -278,7 +314,7 @@
           id="searchInput" 
           oninput="handleSearch(this.value)"
           placeholder="Buscar descripción, SKU o pistolear/pegar EAN..." 
-          class="w-full pl-10 pr-24 py-2.5 text-sm bg-slate-950 border border-slate-700 rounded-xl focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium text-white transition placeholder:text-slate-500"
+          class="w-full pl-10 pr-24 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium text-slate-900 dark:text-white transition placeholder:text-slate-400 dark:placeholder:text-slate-500"
         >
         <button 
           onclick="triggerManualScanFromInput()" 
@@ -295,20 +331,20 @@
         <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-sky-600 text-white shadow-sm">
           Todos (<span id="count-all">0</span>)
         </button>
-        <button onclick="setFilter('pending')" id="filter-pending" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+        <button onclick="setFilter('pending')" id="filter-pending" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
           Pendientes (<span id="count-pending">0</span>)
         </button>
-        <button onclick="setFilter('completed')" id="filter-completed" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+        <button onclick="setFilter('completed')" id="filter-completed" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
           Listos (<span id="count-completed">0</span>)
         </button>
-        <button onclick="setFilter('issues')" id="filter-issues" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700">
+        <button onclick="setFilter('issues')" id="filter-issues" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
           Excesos (<span id="count-issues">0</span>)
         </button>
       </div>
 
       <!-- Reset / Limpiar -->
       <div class="flex items-center justify-end gap-1.5">
-        <button onclick="confirmResetList()" title="Vaciar checklist" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl transition border border-transparent hover:border-rose-900/60">
+        <button onclick="confirmResetList()" title="Vaciar checklist" class="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition border border-transparent hover:border-rose-200 dark:hover:border-rose-900/60">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
       </div>
@@ -320,12 +356,12 @@
       </div>
 
       <!-- Estado Vacío -->
-      <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center bg-slate-800/40 rounded-2xl border-2 border-dashed border-slate-700/80 p-6 my-auto">
-        <div class="w-16 h-16 bg-sky-950/80 text-sky-400 border border-sky-800/60 rounded-2xl flex items-center justify-center mb-3">
+      <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900/60 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-800 p-6 my-auto shadow-sm">
+        <div class="w-16 h-16 bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 rounded-2xl flex items-center justify-center mb-3">
           <i data-lucide="qr-code" class="w-8 h-8"></i>
         </div>
-        <h3 class="text-base font-bold text-white">No hay orden cargada</h3>
-        <p class="text-xs text-slate-400 max-w-sm mt-1 mb-5">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">No hay orden cargada</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-5">
           Escanéa con tu láser el <b>código QR de Picking</b> desde otra pantalla/papel o carga un albarán PDF/CSV.
         </p>
         <div class="flex flex-wrap justify-center gap-2">
@@ -339,43 +375,44 @@
 
   </main>
 
+  <!-- MODAL: Generador de QR Picking para PDAs -->
   <div id="qrGeneratorModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-slate-900 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-700 space-y-4 text-center">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-center">
+      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
         <div class="flex items-center space-x-2 text-left">
-          <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/40">
+          <div class="p-2 bg-amber-500/20 text-amber-500 dark:text-amber-400 rounded-xl border border-amber-500/40">
             <i data-lucide="qr-code" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-extrabold text-white text-base">QR de Picking para PDA</h3>
-            <p class="text-[11px] text-slate-400 font-medium">Escaneo instantáneo sin cables ni servidores</p>
+            <h3 class="font-extrabold text-slate-900 dark:text-white text-base">QR de Picking para PDA</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Escaneo instantáneo sin cables ni servidores</p>
           </div>
         </div>
-        <button onclick="closeModal('qrGeneratorModal')" class="text-slate-400 hover:text-white p-1">
+        <button onclick="closeModal('qrGeneratorModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="p-3 bg-white rounded-2xl inline-block shadow-inner mx-auto my-2 border-4 border-slate-800">
+      <div class="p-3 bg-white rounded-2xl inline-block shadow-inner mx-auto my-2 border-4 border-slate-200 dark:border-slate-800">
         <div id="qrcodeCanvas" class="flex justify-center items-center"></div>
       </div>
 
-      <div class="text-left bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-        <div class="flex justify-between text-xs text-slate-400 font-medium">
+      <div class="text-left bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
+        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
           <span>Referencias codificadas:</span>
-          <span id="qrLinesCount" class="font-mono-code font-bold text-amber-400">0</span>
+          <span id="qrLinesCount" class="font-mono-code font-bold text-amber-600 dark:text-amber-400">0</span>
         </div>
-        <div class="flex justify-between text-xs text-slate-400 font-medium">
+        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
           <span>Unidades totales:</span>
-          <span id="qrUnitsCount" class="font-mono-code font-bold text-white">0</span>
+          <span id="qrUnitsCount" class="font-mono-code font-bold text-slate-900 dark:text-white">0</span>
         </div>
-        <p class="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800/80">
           Apunta con el lector láser de la PDA a la pantalla del monitor o imprime este ticket.
         </p>
       </div>
 
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-        <button onclick="printQrTicket()" class="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border border-slate-700 transition">
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="printQrTicket()" class="flex-1 py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border border-slate-300 dark:border-slate-700 transition">
           <i data-lucide="printer" class="w-4 h-4"></i>
           <span>Imprimir Ticket</span>
         </button>
@@ -406,42 +443,43 @@
     </div>
   </div>
 
+  <!-- MODAL: Importación PDF / CSV -->
   <div id="importModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-700 space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
         <div class="flex items-center space-x-2">
-          <div class="p-2 bg-sky-500/20 text-sky-400 rounded-xl border border-sky-500/40">
+          <div class="p-2 bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-500/40">
             <i data-lucide="file-up" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="font-bold text-white text-base">Cargar Packing List</h3>
-            <p class="text-xs text-slate-400">PDF de Odoo o archivos CSV / TXT</p>
+            <h3 class="font-bold text-slate-900 dark:text-white text-base">Cargar Packing List</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">PDF de Odoo o archivos CSV / TXT</p>
           </div>
         </div>
-        <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-white p-1">
+        <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-1.5">Archivo de albarán (.PDF, .CSV, .TXT)</label>
-        <input type="file" id="generalFileInput" accept=".pdf, .csv, .txt" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-600 file:text-white hover:file:bg-sky-500 border border-slate-700 rounded-xl p-1 bg-slate-950">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Archivo de albarán (.PDF, .CSV, .TXT)</label>
+        <input type="file" id="generalFileInput" accept=".pdf, .csv, .txt" class="block w-full text-xs text-slate-600 dark:text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-600 file:text-white hover:file:bg-sky-500 border border-slate-300 dark:border-slate-700 rounded-xl p-1 bg-slate-50 dark:bg-slate-950">
         <p class="text-[11px] text-slate-500 mt-1">Extrae automáticamente códigos EAN, referencias y cantidades del albarán de Odoo.</p>
       </div>
 
-      <div class="flex items-center text-xs text-slate-600 my-1">
-        <div class="flex-grow border-t border-slate-800"></div>
-        <span class="px-2 font-bold text-slate-500">O PEGAR TEXTO DEL PEDIDO</span>
-        <div class="flex-grow border-t border-slate-800"></div>
+      <div class="flex items-center text-xs text-slate-400 dark:text-slate-600 my-1">
+        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+        <span class="px-2 font-bold text-slate-400 dark:text-slate-500">O PEGAR TEXTO DEL PEDIDO</span>
+        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
       </div>
 
       <div>
-        <label class="block text-xs font-bold text-slate-300 mb-1">Formato: ean, sku, descripcion, cantidad</label>
-        <textarea id="csvPasteInput" rows="3" placeholder="8412345000018, SKU-01, Taladro Percutor 850W, 3&#10;8412345000025, SKU-02, Brocas Metal HSS, 5" class="w-full text-xs font-mono-code p-2.5 border border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-950 text-white placeholder:text-slate-600"></textarea>
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Formato: ean, sku, descripcion, cantidad</label>
+        <textarea id="csvPasteInput" rows="3" placeholder="8412345000018, SKU-01, Taladro Percutor 850W, 3&#10;8412345000025, SKU-02, Brocas Metal HSS, 5" class="w-full text-xs font-mono-code p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"></textarea>
       </div>
 
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-        <button onclick="closeModal('importModal')" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeModal('importModal')" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
           Cancelar
         </button>
         <button onclick="handleFileInputProcessing()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-md transition">
@@ -453,26 +491,26 @@
 
   <!-- MODAL: Ajuste Numérico para Guantes de Almacén -->
   <div id="manualQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-700 space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-        <h3 class="font-bold text-white text-sm">Fijar Cantidad Verificada</h3>
-        <button onclick="closeModal('manualQtyModal')" class="text-slate-400 hover:text-white">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+        <h3 class="font-bold text-slate-900 dark:text-white text-sm">Fijar Cantidad Verificada</h3>
+        <button onclick="closeModal('manualQtyModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
       <div>
-        <p id="modalItemDesc" class="text-xs font-bold text-white line-clamp-2 mb-1"></p>
-        <p id="modalItemEan" class="text-[11px] font-mono-code text-slate-400 mb-4"></p>
+        <p id="modalItemDesc" class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 mb-1"></p>
+        <p id="modalItemEan" class="text-[11px] font-mono-code text-slate-500 dark:text-slate-400 mb-4"></p>
         
-        <label class="block text-xs font-bold text-slate-400 mb-1.5">Unidades comprobadas:</label>
+        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">Unidades comprobadas:</label>
         <div class="flex items-center space-x-3">
-          <button onclick="adjustModalInput(-1)" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-700">-</button>
-          <input type="number" id="modalQtyInput" min="0" class="flex-1 text-center font-mono-code font-black text-2xl py-2 bg-slate-950 text-white border border-slate-700 rounded-2xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
-          <button onclick="adjustModalInput(1)" class="w-12 h-12 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-700">+</button>
+          <button onclick="adjustModalInput(-1)" class="w-12 h-12 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-300 dark:border-slate-700">-</button>
+          <input type="number" id="modalQtyInput" min="0" class="flex-1 text-center font-mono-code font-black text-2xl py-2 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
+          <button onclick="adjustModalInput(1)" class="w-12 h-12 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-300 dark:border-slate-700">+</button>
         </div>
       </div>
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
-        <button onclick="closeModal('manualQtyModal')" class="px-3.5 py-2.5 bg-slate-800 text-slate-300 rounded-xl text-xs font-bold">Cancelar</button>
+      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button onclick="closeModal('manualQtyModal')" class="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold">Cancelar</button>
         <button onclick="saveManualQty()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md">Guardar</button>
       </div>
     </div>
@@ -482,6 +520,41 @@
     // Inicialización del Worker de PDF.js
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // --- Manejo del Tema Claro / Oscuro (Light & Dark Theme Engine) ---
+    function initTheme() {
+      const savedTheme = localStorage.getItem('packcheck_theme') || 'light';
+      applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const newTheme = isDark ? 'light' : 'dark';
+      applyTheme(newTheme);
+      localStorage.setItem('packcheck_theme', newTheme);
+    }
+
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      const sunIcon = document.getElementById('themeIconSun');
+      const moonIcon = document.getElementById('themeIconMoon');
+      const label = document.getElementById('themeLabel');
+
+      if (theme === 'dark') {
+        root.classList.add('dark');
+        root.classList.remove('html-light');
+        if (sunIcon) sunIcon.classList.add('hidden');
+        if (moonIcon) moonIcon.classList.remove('hidden');
+        if (label) label.textContent = 'Modo Oscuro';
+      } else {
+        root.classList.remove('dark');
+        root.classList.add('html-light');
+        if (sunIcon) sunIcon.classList.remove('hidden');
+        if (moonIcon) moonIcon.classList.add('hidden');
+        if (label) label.textContent = 'Modo Claro';
+      }
+      lucide.createIcons();
     }
 
     // Estado Reactivo Principal
@@ -524,7 +597,6 @@
       } catch (e) {}
     }
 
-    // Tono especial de "Orden QR Cargada": Doble arpegio ascendente
     function playBeepOrderLoaded() {
       try {
         const ctx = getAudioContext();
@@ -670,7 +742,6 @@
       const container = document.getElementById('qrcodeCanvas');
       container.innerHTML = '';
 
-      // Generar QR de Picking en pantalla
       new QRCode(container, {
         text: payload,
         width: 250,
@@ -680,7 +751,6 @@
         correctLevel: QRCode.CorrectLevel.M
       });
 
-      // Preparar versión para ticket de impresión
       const printTarget = document.getElementById('printQrTarget');
       printTarget.innerHTML = '';
       new QRCode(printTarget, {
@@ -876,7 +946,6 @@
     });
 
     function handleIncomingScan(code) {
-      // 1. ¿Es un Código QR de Orden de Picking?
       if (code.startsWith('PK1:')) {
         const loadedItems = decodePayloadToOrder(code);
         if (loadedItems) {
@@ -895,7 +964,6 @@
         }
       }
 
-      // 2. ¿Es un escaneo de producto físico (EAN/SKU)?
       processProductScan(code);
     }
 
@@ -943,7 +1011,6 @@
       renderList();
     }
 
-    // Cámara Móvil (HTML5-QRCode)
     async function toggleCameraScanner() {
       const section = document.getElementById('cameraScannerSection');
       const select = document.getElementById('cameraSourceSelect');
@@ -1072,7 +1139,7 @@
         if (f === filterType) {
           btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-sky-600 text-white shadow-md";
         } else {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-900 hover:bg-slate-700 text-slate-300 border border-slate-700";
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800";
         }
       });
       renderList();
@@ -1119,38 +1186,42 @@
           const status = getItemStatus(item);
           const isSpotlight = (item.originalIndex === currentSpotlightIndex);
 
-          let borderClass = "border-l-4 border-slate-600 bg-slate-800/80";
+          // Paleta industrial adaptable para Modo Claro y Modo Oscuro
+          let cardStyle = "";
           let badgeHtml = "";
           let progressBg = "bg-amber-500";
 
           if (status === 'completed') {
-            borderClass = "border-l-4 border-emerald-500 bg-emerald-950/20";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700"><i data-lucide="check" class="w-3 h-3"></i> Listo</span>`;
+            // Completado: verde esmeralda legible
+            cardStyle = "border-l-4 border-l-emerald-500 bg-[#f0fdf4] dark:bg-emerald-950/20 border-slate-200 dark:border-slate-800";
+            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"><i data-lucide="check" class="w-3 h-3"></i> Listo</span>`;
             progressBg = "bg-emerald-500";
           } else if (status === 'issues') {
-            borderClass = "border-l-4 border-rose-500 bg-rose-950/30";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-900/60 text-rose-300 border border-rose-700"><i data-lucide="alert-octagon" class="w-3 h-3"></i> Exceso +${item.verified - item.expected}</span>`;
+            // Exceso: rojo legible
+            cardStyle = "border-l-4 border-l-rose-500 bg-[#fef2f2] dark:bg-rose-950/30 border-slate-200 dark:border-slate-800";
+            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700"><i data-lucide="alert-octagon" class="w-3 h-3"></i> Exceso +${item.verified - item.expected}</span>`;
             progressBg = "bg-rose-500";
           } else {
-            borderClass = "border-l-4 border-amber-500 bg-slate-800/80";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-900/40 text-amber-300 border border-amber-800/60">Faltan: ${item.expected - item.verified}</span>`;
+            // Pendiente: amarillo/ámbar suave
+            cardStyle = "border-l-4 border-l-amber-500 bg-[#fffbeb] dark:bg-slate-900 border-slate-200 dark:border-slate-800";
+            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">Faltan: ${item.expected - item.verified}</span>`;
           }
 
           const percent = item.expected > 0 ? Math.min(100, Math.round((item.verified / item.expected) * 100)) : 100;
 
           return `
-            <div id="item-card-${item.originalIndex}" class="rounded-2xl p-3.5 sm:p-4 border border-slate-700 shadow-md transition-all duration-300 ${borderClass} ${isSpotlight ? 'item-spotlight' : ''}">
+            <div id="item-card-${item.originalIndex}" class="rounded-2xl p-3.5 sm:p-4 border shadow-sm transition-all duration-300 ${cardStyle} ${isSpotlight ? 'item-spotlight' : ''}">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 
                 <!-- Datos del Artículo con EAN Clicable -->
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center space-x-2 mb-1.5">
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono-code">${item.sku}</span>
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono-code">${item.sku}</span>
                     ${badgeHtml}
                     ${isSpotlight ? `<span class="text-[10px] font-extrabold bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse"><i data-lucide="crosshair" class="w-3 h-3"></i> EN FOCO</span>` : ''}
                   </div>
                   
-                  <h4 class="font-bold text-white text-sm sm:text-base leading-snug line-clamp-2">${item.desc}</h4>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-snug line-clamp-2">${item.desc}</h4>
                   
                   <!-- Chip EAN interactivo con Spotlight al toque -->
                   <div class="flex flex-wrap items-center gap-2 mt-2">
@@ -1158,30 +1229,30 @@
                       type="button"
                       onclick="spotlightItem(${item.originalIndex}, 'click')"
                       title="Toca para localizar e iluminar este producto en pantalla"
-                      class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono-code font-bold transition active:scale-95 border ${isSpotlight ? 'bg-sky-600 text-white border-sky-400 shadow-md' : 'bg-slate-950 hover:bg-slate-900 text-slate-300 hover:text-sky-300 border-slate-700 hover:border-sky-500'}"
+                      class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono-code font-bold transition active:scale-95 border ${isSpotlight ? 'bg-sky-600 text-white border-sky-400 shadow-md' : 'bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-300 border-slate-300 dark:border-slate-700 hover:border-sky-500'}"
                     >
-                      <i data-lucide="barcode" class="w-4 h-4 ${isSpotlight ? 'text-white' : 'text-slate-400 group-hover:text-sky-400'}"></i>
+                      <i data-lucide="barcode" class="w-4 h-4 ${isSpotlight ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-sky-500'}"></i>
                       <span>${item.ean}</span>
                       <i data-lucide="sparkles" class="w-3 h-3 opacity-60 group-hover:opacity-100"></i>
                     </button>
-                    <span class="text-[10px] text-slate-500 hidden sm:inline">(clic EAN para iluminar)</span>
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:inline">(clic EAN para iluminar)</span>
                   </div>
                 </div>
 
                 <!-- Controles Táctiles Adaptados para Guantes -->
-                <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-700/60">
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
                   
                   <!-- Contador verificado / esperado -->
-                  <div class="cursor-pointer text-center px-3 py-1.5 bg-slate-950 hover:bg-slate-900 rounded-xl border border-slate-700 transition" onclick="openManualQtyModal(${item.originalIndex})" title="Fijar cantidad manual">
-                    <div class="text-base sm:text-lg font-black font-mono-code ${status === 'completed' ? 'text-emerald-400' : (status === 'issues' ? 'text-rose-400' : 'text-white')}">
-                      ${item.verified} <span class="text-xs font-normal text-slate-500">/ ${item.expected}</span>
+                  <div class="cursor-pointer text-center px-3 py-1.5 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 transition" onclick="openManualQtyModal(${item.originalIndex})" title="Fijar cantidad manual">
+                    <div class="text-base sm:text-lg font-black font-mono-code ${status === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (status === 'issues' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white')}">
+                      ${item.verified} <span class="text-xs font-normal text-slate-400 dark:text-slate-500">/ ${item.expected}</span>
                     </div>
-                    <span class="text-[10px] font-bold text-sky-400 uppercase tracking-tight block">Editar</span>
+                    <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-tight block">Editar</span>
                   </div>
 
-                  <!-- Botones Rápidos -->
+                  <!-- Botones Rápidos Táctiles -->
                   <div class="flex items-center gap-1.5">
-                    <button onclick="modifyCount(${item.originalIndex}, -1)" class="w-11 h-11 rounded-xl bg-slate-900 hover:bg-slate-700 active:scale-90 text-slate-200 font-black flex items-center justify-center transition border border-slate-700">
+                    <button onclick="modifyCount(${item.originalIndex}, -1)" class="w-11 h-11 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 text-slate-800 dark:text-slate-200 font-black flex items-center justify-center transition border border-slate-300 dark:border-slate-700 shadow-sm">
                       <i data-lucide="minus" class="w-4 h-4"></i>
                     </button>
                     
@@ -1189,7 +1260,7 @@
                       <i data-lucide="plus" class="w-5 h-5"></i>
                     </button>
 
-                    <button onclick="markFullMatch(${item.originalIndex})" title="Marcar todo cotejado" class="h-11 px-3.5 rounded-xl ${status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-slate-900 hover:bg-emerald-950 text-slate-300 hover:text-emerald-400'} active:scale-90 font-bold flex items-center justify-center transition border border-slate-700">
+                    <button onclick="markFullMatch(${item.originalIndex})" title="Marcar todo cotejado" class="h-11 px-3.5 rounded-xl ${status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400'} active:scale-90 font-bold flex items-center justify-center transition border border-slate-300 dark:border-slate-700 shadow-sm">
                       <i data-lucide="check" class="w-4 h-4"></i>
                     </button>
                   </div>
@@ -1199,7 +1270,7 @@
               </div>
 
               <!-- Mini barra de progreso -->
-              <div class="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden mt-3 border border-slate-800">
+              <div class="w-full bg-slate-200 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden mt-3 border border-slate-200 dark:border-slate-800">
                 <div class="${progressBg} h-full transition-all duration-300" style="width: ${percent}%;"></div>
               </div>
             </div>
@@ -1321,19 +1392,19 @@
       clearTimeout(alertTimeout);
 
       if (type === 'success') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-emerald-950/80 border-emerald-500/70 text-emerald-100 flex items-center justify-between";
+        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-emerald-50 dark:bg-emerald-950/80 border-emerald-400 dark:border-emerald-500/70 text-emerald-950 dark:text-emerald-100 flex items-center justify-between";
         iconEl.className = "p-2 rounded-xl bg-emerald-600 text-white";
         iconEl.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
       } else if (type === 'error') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-rose-950/80 border-rose-500/70 text-rose-100 flex items-center justify-between";
+        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-rose-50 dark:bg-rose-950/80 border-rose-400 dark:border-rose-500/70 text-rose-950 dark:text-rose-100 flex items-center justify-between";
         iconEl.className = "p-2 rounded-xl bg-rose-600 text-white";
         iconEl.innerHTML = '<i data-lucide="alert-octagon" class="w-5 h-5"></i>';
       } else if (type === 'warning') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-amber-950/80 border-amber-500/70 text-amber-100 flex items-center justify-between";
+        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-amber-50 dark:bg-amber-950/80 border-amber-400 dark:border-amber-500/70 text-amber-950 dark:text-amber-100 flex items-center justify-between";
         iconEl.className = "p-2 rounded-xl bg-amber-600 text-slate-950";
         iconEl.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5"></i>';
       } else {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-sky-950/80 border-sky-500/70 text-sky-100 flex items-center justify-between";
+        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-sky-50 dark:bg-sky-950/80 border-sky-400 dark:border-sky-500/70 text-sky-950 dark:text-sky-100 flex items-center justify-between";
         iconEl.className = "p-2 rounded-xl bg-sky-600 text-white";
         iconEl.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
       }
@@ -1400,7 +1471,9 @@
       showScanAlert('success', 'Reporte Descargado', 'CSV de auditoría generado correctamente.');
     }
 
+    // Inicialización al cargar el DOM
     window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
       loadFromStorage();
       renderList();
       lucide.createIcons();
