@@ -241,9 +241,37 @@
     }
     .ean-btn:hover { border-color: var(--spotlight-border); color: var(--spotlight-border); }
 
-    .qty-display { text-align: center; min-width: 80px; }
+    /* Caja de Cantidades Interactiva */
+    .qty-display { 
+      text-align: center; 
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .qty-interactive {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px dashed transparent;
+      transition: all 0.15s ease;
+    }
+    .qty-interactive:hover {
+      background: var(--surface-card);
+      border-color: var(--spotlight-border);
+    }
     .qty-numbers { font-size: 1.3rem; font-weight: 900; }
-    .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+    .qty-edit-hint {
+      font-size: 0.65rem;
+      color: var(--brand-gold);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-top: -2px;
+    }
+    .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 3px; }
 
     /* Controles táctiles grandes */
     .touch-controls { display: flex; gap: 4px; }
@@ -295,7 +323,7 @@
     @media (max-width: 650px) {
       .item-row { grid-template-columns: 1fr; gap: 10px; }
       .touch-controls { justify-content: flex-end; }
-      .qty-display { text-align: left; display: flex; gap: 10px; align-items: baseline; }
+      .qty-display { text-align: left; align-items: flex-start; }
     }
   </style>
 </head>
@@ -396,7 +424,6 @@
   </div>
 
   <script>
-    // Inicializar Worker de PDF.js
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     let items = [];
@@ -406,7 +433,7 @@
     let html5QrCode = null;
     let cameraActive = false;
 
-    // --- Motor de Audio (Web Audio API) ---
+    // --- Motor de Audio ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -443,7 +470,7 @@
       }
     }
 
-    // --- Gestión de Tema Claro/Oscuro ---
+    // --- Modo Claro / Oscuro ---
     function initTheme() {
       const saved = localStorage.getItem('packcheck_theme') || 'dark';
       applyTheme(saved);
@@ -468,7 +495,7 @@
     }
     initTheme();
 
-    // --- Parser de Archivos (PDF / CSV) ---
+    // --- Parser de Archivos ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -481,7 +508,6 @@
       this.value = '';
     });
 
-    // --- Parser de PDF adaptado a Visiotech / Odoo ---
     async function parsePDF(file) {
       showFeedback('Extrayendo y consolidando artículos del PDF...', true);
       try {
@@ -526,7 +552,6 @@
         let line = lines[i].trim();
         if (!line) continue;
 
-        // 1. Omitir cabeceras, pies de página o textos estáticos del albarán
         if (
           line.startsWith('Serial') ||
           line.includes('VISIOTECH') || 
@@ -544,25 +569,20 @@
           continue;
         }
 
-        // 2. Toda fila de artículo en Visiotech contiene importes/porcentajes
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
         if (!hasPriceOrDiscount) {
           continue;
         }
 
-        // 3. Buscar si contiene un código de barras EAN
         const eanMatch = line.match(eanRegex);
         if (eanMatch) {
           const candidateEan = eanMatch[1];
-
-          // Filtrar fechas numéricas o teléfonos de cabecera
           if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
 
           const parts = line.split(candidateEan);
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          // A) Extraer SKU (última palabra previa al EAN)
           let sku = 'SKU-' + candidateEan.slice(-4);
           let descPrefix = '';
           if (beforeEan.length > 0) {
@@ -571,7 +591,6 @@
             descPrefix = beforeWords.slice(0, -1).join(' ');
           }
 
-          // B) Limpiar importes, porcentajes y símbolos
           let cleanAfter = afterEan
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -581,7 +600,6 @@
             .replace(/0\.0/g, ' ')
             .trim();
 
-          // C) Extraer la Cantidad esperada (último número entero)
           const numbers = cleanAfter.match(/\b\d+\b/g);
           let qty = 1;
           let desc = cleanAfter;
@@ -589,7 +607,6 @@
           if (numbers && numbers.length > 0) {
             const lastNum = numbers[numbers.length - 1];
             qty = parseInt(lastNum, 10) || 1;
-            
             const lastNumIdx = desc.lastIndexOf(lastNum);
             if (lastNumIdx !== -1) {
               desc = desc.substring(0, lastNumIdx).trim();
@@ -599,7 +616,6 @@
           desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
-          // D) CONSOLIDACIÓN DE DUPLICADOS: Si el EAN ya existe, suma las unidades
           const existingItem = tempParsedItems.find(item => item.ean === candidateEan);
           if (existingItem) {
             existingItem.expected += qty;
@@ -650,7 +666,6 @@
       showFeedback(`✓ Cargadas ${items.length} referencias consolidadas`, true);
     }
 
-    // --- Parser CSV con CONSOLIDACIÓN ---
     function parseCSV(file) {
       const reader = new FileReader();
       reader.onload = (evt) => {
@@ -688,7 +703,7 @@
       reader.readAsText(file);
     }
 
-    // --- Escáner Global HID (Pistolas Láser en PDA o USB) ---
+    // --- Escáner Global HID (Pistolas Láser en PDA / USB) ---
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
 
@@ -706,7 +721,6 @@
       }
     });
 
-    // --- Gestor Universal de Códigos (EAN vs QR de Orden) ---
     function handleBarcodeScanned(code) {
       if (code.startsWith('PK1:')) {
         loadOrderFromQR(code);
@@ -725,15 +739,15 @@
         showFeedback(`✓ Leído: ${item.desc} (${item.scanned}/${item.expected})`, true);
         
         saveState();
-        renderList();             // 1. Redibuja y reordena
-        applySpotlight(cleanEan); // 2. Dispara el fogonazo visual y centra
+        renderList();
+        applySpotlight(cleanEan);
       } else {
         playBeep('error');
         showFeedback(`❌ EAN NO ENCONTRADO en el albarán: ${cleanEan}`, false);
       }
     }
 
-    // --- Protocolo QR de Picking (Traspaso PC -> PDA) ---
+    // --- Protocolo QR de Picking ---
     function generateOrderQR() {
       if (items.length === 0) return alert('Primero carga un albarán para generar el QR.');
 
@@ -784,7 +798,7 @@
       }
     }
 
-    // --- Cámara Integrada ---
+    // --- Cámara ---
     function toggleCamera() {
       const container = document.getElementById('camera-container');
       if (cameraActive) {
@@ -809,7 +823,7 @@
       }
     }
 
-    // --- Spotlight Interactivo ---
+    // --- Spotlight ---
     function triggerSpotlight(ean) {
       playBeep('locate');
       applySpotlight(ean);
@@ -824,12 +838,11 @@
         notice.style.display = 'flex';
       }
 
-      // Reinicio forzado de la animación CSS de destello
       requestAnimationFrame(() => {
         const el = document.getElementById('row-' + ean);
         if (el) {
           el.classList.remove('spotlight');
-          void el.offsetWidth; // Fuerza repaint
+          void el.offsetWidth;
           el.classList.add('spotlight');
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -842,7 +855,7 @@
       renderList();
     }
 
-    // --- Acciones de Cantidad (+1, -1, Check Todo) ---
+    // --- Acciones de Cantidad (+1, -1, Check Todo y EDICIÓN MANUAL) ---
     function adjustQty(ean, delta) {
       const item = items.find(i => i.ean === ean);
       if (item && (item.scanned + delta >= 0)) {
@@ -864,7 +877,28 @@
       }
     }
 
-    // --- Renderizado, KPIs y ORDENACIÓN DINÁMICA ---
+    // Modificar cantidad tecleando a mano
+    function promptManualQty(ean) {
+      const item = items.find(i => i.ean === ean);
+      if (!item) return;
+
+      const input = prompt(`Modificar cantidad verificada para:\n${item.sku} - ${item.desc}\n\nCantidad esperada: ${item.expected}`, item.scanned);
+      if (input !== null) {
+        const parsed = parseInt(input.trim(), 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          item.scanned = parsed;
+          playBeep('ok');
+          saveState();
+          renderList();
+          applySpotlight(ean);
+          showFeedback(`✓ ${item.sku}: cantidad ajustada a ${parsed}`, true);
+        } else {
+          alert('Por favor introduce un número entero válido mayor o igual a 0.');
+        }
+      }
+    }
+
+    // --- Renderizado y Ordenación ---
     function setFilter(type, el) {
       currentFilter = type;
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -896,7 +930,6 @@
         return true;
       });
 
-      // ORDENACIÓN: Referencias completas bajan al fondo
       filtered.sort((a, b) => {
         const isADone = (a.scanned === a.expected);
         const isBDone = (b.scanned === b.expected);
@@ -907,7 +940,6 @@
         return (a.orderIndex || 0) - (b.orderIndex || 0);
       });
 
-      // Actualizar KPIs
       document.getElementById('kpiDone').textContent = `${completedRefs} / ${items.length}`;
       document.getElementById('kpiPendingUnits').textContent = Math.max(0, totalExp - totalScan);
       document.getElementById('kpiScannedUnits').textContent = totalScan;
@@ -947,7 +979,10 @@
             </button>
           </div>
           <div class="qty-display">
-            <div class="qty-numbers">${item.scanned} / ${item.expected}</div>
+            <div class="qty-interactive" onclick="promptManualQty('${item.ean}')" title="Toca aquí para teclear la cantidad a mano">
+              <div class="qty-numbers">${item.scanned} / ${item.expected}</div>
+              <span class="qty-edit-hint">✏️ EDITAR</span>
+            </div>
             <div class="qty-status" style="color: ${statusColor};">${statusText}</div>
           </div>
           <div class="touch-controls">
@@ -969,7 +1004,6 @@
       fb.textContent = text;
     }
 
-    // --- Persistencia en LocalStorage ---
     function saveState() {
       localStorage.setItem('packcheck_items', JSON.stringify(items));
     }
@@ -984,7 +1018,6 @@
     }
     loadSavedState();
 
-    // --- Exportar Reporte de Salida en CSV ---
     function exportReport() {
       if (items.length === 0) return alert('No hay datos para exportar.');
       let csv = 'EAN;SKU;Descripcion;Esperado;Verificado;Diferencia;Estado\n';
