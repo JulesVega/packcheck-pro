@@ -28,7 +28,7 @@
       --warning-bg: rgba(245, 158, 11, 0.12);
       --danger: #ef4444;
       --danger-bg: rgba(239, 68, 68, 0.12);
-      --spotlight-glow: rgba(56, 189, 248, 0.45);
+      --spotlight-glow: rgba(56, 189, 248, 0.55);
       --spotlight-border: #38bdf8;
       --brand-gold: #f59e0b;
     }
@@ -48,7 +48,7 @@
       --warning-bg: #fffbeb;
       --danger: #dc2626;
       --danger-bg: #fef2f2;
-      --spotlight-glow: rgba(2, 132, 199, 0.3);
+      --spotlight-glow: rgba(2, 132, 199, 0.4);
       --spotlight-border: #0284c7;
       --brand-gold: #b45309;
     }
@@ -189,16 +189,31 @@
       align-items: center;
       border-left: 6px solid var(--warning);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
     }
     .item-row.done { border-left-color: var(--success); background: var(--success-bg); opacity: 0.82; }
     .item-row.overflow { border-left-color: var(--danger); background: var(--danger-bg); }
 
-    /* Spotlight Glow al pulsar EAN o escanear */
+    /* Animación de destello al picar o escanear */
+    @keyframes scanFlash {
+      0% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 6px var(--spotlight-border), 0 0 25px var(--spotlight-border);
+      }
+      50% {
+        transform: scale(1.01);
+        box-shadow: 0 0 0 4px var(--spotlight-border), 0 0 15px var(--spotlight-glow);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 3px var(--spotlight-border), 0 4px 14px rgba(0,0,0,0.3);
+      }
+    }
+
     .item-row.spotlight {
       border-color: var(--spotlight-border) !important;
-      border-left-width: 8px !important;
-      box-shadow: 0 0 0 3px var(--spotlight-glow), 0 8px 16px rgba(0,0,0,0.3) !important;
-      transform: scale(1.01);
+      border-left-width: 10px !important;
+      animation: scanFlash 0.6s ease-out forwards;
       z-index: 10;
       opacity: 1 !important;
     }
@@ -230,7 +245,7 @@
     .qty-numbers { font-size: 1.3rem; font-weight: 900; }
     .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
 
-    /* Controles táctiles grandes para operarios con guantes */
+    /* Controles táctiles grandes */
     .touch-controls { display: flex; gap: 4px; }
     .btn-touch {
       width: 44px;
@@ -529,8 +544,7 @@
           continue;
         }
 
-        // 2. REGLA: Toda fila de artículo en Visiotech contiene importes/porcentajes
-        // Las líneas con números de serie no tienen importes ni porcentajes
+        // 2. Toda fila de artículo en Visiotech contiene importes/porcentajes
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
         if (!hasPriceOrDiscount) {
           continue;
@@ -709,9 +723,10 @@
         item.scanned += 1;
         playBeep('ok');
         showFeedback(`✓ Leído: ${item.desc} (${item.scanned}/${item.expected})`, true);
-        applySpotlight(cleanEan);
+        
         saveState();
-        renderList();
+        renderList();             // 1. Redibuja y reordena
+        applySpotlight(cleanEan); // 2. Dispara el fogonazo visual y centra
       } else {
         playBeep('error');
         showFeedback(`❌ EAN NO ENCONTRADO en el albarán: ${cleanEan}`, false);
@@ -796,9 +811,8 @@
 
     // --- Spotlight Interactivo ---
     function triggerSpotlight(ean) {
-      applySpotlight(ean);
       playBeep('locate');
-      renderList();
+      applySpotlight(ean);
     }
 
     function applySpotlight(ean) {
@@ -810,10 +824,16 @@
         notice.style.display = 'flex';
       }
 
-      setTimeout(() => {
+      // Reinicio forzado de la animación CSS de destello
+      requestAnimationFrame(() => {
         const el = document.getElementById('row-' + ean);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 80);
+        if (el) {
+          el.classList.remove('spotlight');
+          void el.offsetWidth; // Fuerza repaint
+          el.classList.add('spotlight');
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
     }
 
     function clearSpotlight() {
@@ -829,6 +849,7 @@
         item.scanned += delta;
         saveState();
         renderList();
+        applySpotlight(ean);
       }
     }
 
@@ -839,6 +860,7 @@
         playBeep('ok');
         saveState();
         renderList();
+        applySpotlight(ean);
       }
     }
 
