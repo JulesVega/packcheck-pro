@@ -1,1552 +1,975 @@
 <!DOCTYPE html>
-<html lang="es" class="light">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PackCheck Pro - (A MORALEJO BRAND)</title>
+  <title>PackCheck Pro (A MORALEJO BRAND)</title>
   
-  <!-- Embedded PWA Manifest -->
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22PackCheck%20Pro%22%2C%22short_name%22%3A%22PackCheck%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%230284c7%22%7D">
-  <meta name="theme-color" content="#0f172a">
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              900: '#0c4a6e',
-            }
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- PDF.js para procesar PDFs de Odoo sin servidor -->
+  <!-- PDF.js para procesar PDFs de Odoo en cliente -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-  <!-- QRCode.js para generación de tickets de picking -->
+  <!-- HTML5-QRCode para escaneo secundario por cámara -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Generador de Códigos QR para traspaso PC -> PDA -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- HTML5-QRCode para escaneo por cámara -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap');
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+    :root {
+      --bg: #0b0f19;
+      --surface: #111827;
+      --surface-card: #1f2937;
+      --surface-border: #374151;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.12);
+      --danger: #ef4444;
+      --danger-bg: rgba(239, 68, 68, 0.12);
+      --spotlight-glow: rgba(56, 189, 248, 0.45);
+      --spotlight-border: #38bdf8;
+      --brand-gold: #f59e0b;
     }
 
-    .font-mono-code {
-      font-family: 'JetBrains Mono', monospace;
+    [data-theme="light"] {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-card: #ffffff;
+      --surface-border: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --spotlight-glow: rgba(2, 132, 199, 0.3);
+      --spotlight-border: #0284c7;
+      --brand-gold: #b45309;
     }
 
-    /* Animación Glow Spotlight para localización rápida de EAN */
-    @keyframes spotlightPulseLight {
-      0% {
-        transform: scale(1.02);
-        box-shadow: 0 0 0 5px rgba(2, 132, 199, 0.45), 0 10px 25px -5px rgba(2, 132, 199, 0.3);
-        background-color: #f0f9ff;
-      }
-      50% {
-        transform: scale(1.025);
-        box-shadow: 0 0 0 8px rgba(2, 132, 199, 0.25), 0 15px 30px -5px rgba(2, 132, 199, 0.4);
-        background-color: #e0f2fe;
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.6), 0 8px 16px -4px rgba(0, 0, 0, 0.1);
-      }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 12px; transition: background 0.2s, color 0.2s; }
+
+    /* Cabecera Corporativa */
+    header {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
-    @keyframes spotlightPulseDark {
-      0% {
-        transform: scale(1.02);
-        box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.65), 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-        background-color: #0c4a6e;
-      }
-      50% {
-        box-shadow: 0 0 0 10px rgba(14, 165, 233, 0.4), 0 25px 30px -5px rgba(14, 165, 233, 0.4);
-        background-color: #075985;
-      }
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.7);
-      }
+    .brand-block h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-tag {
+      font-size: 0.68rem;
+      font-family: monospace;
+      color: var(--brand-gold);
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 2px;
     }
 
-    .html-light .item-spotlight {
-      animation: spotlightPulseLight 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      border-color: #0284c7 !important;
-      position: relative;
+    .actions-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    input[type="file"] { display: none; }
+
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-secondary { background: var(--surface-card); color: var(--text-main); border: 1px solid var(--surface-border); }
+    .btn-qr { background: #7c3aed; }
+    .btn-camera { background: #0891b2; }
+
+    /* Feedback visual de escaneo */
+    #feedback {
+      height: 38px;
+      line-height: 38px;
+      border-radius: 6px;
+      padding: 0 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: none;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    /* Panel de KPIs */
+    .card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .kpi-box {
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .kpi-val { font-size: 1.4rem; font-weight: 800; }
+    .kpi-label { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; }
+
+    /* Barra de Foco Activo */
+    #focusNotice {
+      display: none;
+      background: var(--surface-card);
+      border-left: 4px solid var(--spotlight-border);
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Visor de Cámara */
+    #camera-container { display: none; text-align: center; margin-bottom: 12px; }
+    #reader { width: 100%; max-width: 440px; margin: auto; border-radius: 8px; overflow: hidden; }
+
+    /* Filtros y búsqueda */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .filter-bar input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .chip {
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Filas del Checklist */
+    .item-list { display: flex; flex-direction: column; gap: 8px; }
+    .item-row {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      border-left: 6px solid var(--warning);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .item-row.done { border-left-color: var(--success); background: var(--success-bg); opacity: 0.82; }
+    .item-row.overflow { border-left-color: var(--danger); background: var(--danger-bg); }
+
+    /* Spotlight Glow al pulsar EAN o escanear */
+    .item-row.spotlight {
+      border-color: var(--spotlight-border) !important;
+      border-left-width: 8px !important;
+      box-shadow: 0 0 0 3px var(--spotlight-glow), 0 8px 16px rgba(0,0,0,0.3) !important;
+      transform: scale(1.01);
       z-index: 10;
+      opacity: 1 !important;
     }
 
-    .dark .item-spotlight {
-      animation: spotlightPulseDark 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      border-color: #38bdf8 !important;
-      position: relative;
-      z-index: 10;
-    }
+    .item-info { display: flex; flex-direction: column; gap: 4px; }
+    .item-sku { font-size: 0.72rem; font-weight: 800; font-family: monospace; color: var(--brand-gold); }
+    .item-desc { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
 
-    /* Print media styling for QR Pick Ticket */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printArea, #printArea * {
-        visibility: visible;
-      }
-      #printArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        display: block !important;
-        background: #fff !important;
-        color: #000 !important;
-      }
+    /* Botón interactivo de EAN */
+    .ean-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.88rem;
+      cursor: pointer;
+      font-weight: 700;
+      width: fit-content;
+      margin-top: 4px;
+    }
+    .ean-btn:hover { border-color: var(--spotlight-border); color: var(--spotlight-border); }
+
+    .qty-display { text-align: center; min-width: 80px; }
+    .qty-numbers { font-size: 1.3rem; font-weight: 900; }
+    .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+
+    /* Controles táctiles grandes */
+    .touch-controls { display: flex; gap: 4px; }
+    .btn-touch {
+      width: 44px;
+      height: 44px;
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      color: var(--text-main);
+      border-radius: 6px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-touch:active { background: var(--surface-border); }
+    .btn-check-all { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+
+    /* Modales */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 10px;
+      max-width: 650px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .modal-card table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem; }
+    .modal-card th, .modal-card td { border: 1px solid var(--surface-border); padding: 8px; text-align: left; }
+
+    #qrcodeContainer { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: white; border-radius: 8px; width: fit-content; margin: 15px auto; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (max-width: 650px) {
+      .item-row { grid-template-columns: 1fr; gap: 10px; }
+      .touch-controls { justify-content: flex-end; }
+      .qty-display { text-align: left; display: flex; gap: 10px; align-items: baseline; }
     }
   </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-sky-500 selection:text-white transition-colors duration-200">
+<body>
 
-  <!-- Header Industrial con Marca Moralejo y Toggle Claro/Oscuro -->
-  <header class="bg-slate-900 dark:bg-slate-950 text-white sticky top-0 z-30 shadow-md border-b border-slate-800 transition-colors">
-    <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between">
+  <header>
+    <div class="brand-block">
+      <h1>📦 PackCheck Pro</h1>
+      <div class="brand-tag">(A MORALEJO BRAND)</div>
+    </div>
+    <div class="actions-bar">
+      <label class="btn" for="fileInput">📄 Cargar Albarán (PDF/CSV)</label>
+      <input type="file" id="fileInput" accept=".pdf, .csv, .txt">
       
-      <!-- Brand & Subtitle -->
-      <div class="flex items-center space-x-3">
-        <div class="p-2.5 bg-gradient-to-br from-sky-500 to-sky-700 rounded-xl text-white shadow-inner flex items-center justify-center">
-          <i data-lucide="scan-barcode" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="font-black text-lg sm:text-xl tracking-tight leading-none text-white">PackCheck <span class="text-sky-400">Pro</span></h1>
-            <span class="text-[10px] bg-slate-800 text-sky-300 font-extrabold px-1.5 py-0.5 rounded border border-slate-700 font-mono-code">v2.6</span>
-          </div>
-          <div class="flex items-center gap-1.5 mt-1">
-            <span class="text-[10px] font-extrabold tracking-widest text-amber-400 uppercase drop-shadow-sm font-mono-code">(A MORALEJO BRAND)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Bar & Controls -->
-      <div class="flex items-center space-x-1.5 sm:space-x-2">
-        <!-- Indicador Láser PDA -->
-        <div id="hidStatusIndicator" class="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-950 border border-slate-800 text-xs font-semibold text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Láser PDA Activo</span>
-        </div>
-
-        <!-- Selector de Tema Claro / Oscuro con Texto de Acción Destino -->
-        <button onclick="toggleTheme()" id="themeToggleBtn" title="Cambiar tema" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs border border-slate-700 transition active:scale-95 shadow-sm">
-          <i data-lucide="moon" id="themeIconMoon" class="w-4 h-4"></i>
-          <i data-lucide="sun" id="themeIconSun" class="w-4 h-4 hidden"></i>
-          <span id="themeLabel" class="hidden sm:inline">Modo Oscuro</span>
-        </button>
-
-        <!-- Botón Generar QR de Orden -->
-        <button onclick="openQrGeneratorModal()" id="btnGenerateQr" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition active:scale-95 shadow-md">
-          <i data-lucide="qr-code" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">QR Picking</span>
-        </button>
-
-        <!-- Botón Cámara -->
-        <button onclick="toggleCameraScanner()" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition active:scale-95 shadow-md">
-          <i data-lucide="camera" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Cámara</span>
-        </button>
-
-        <!-- Cargar PDF / CSV -->
-        <button onclick="openModal('importModal')" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition active:scale-95">
-          <i data-lucide="file-up" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Cargar Doc</span>
-        </button>
-
-        <!-- Exportar -->
-        <button onclick="exportAuditReport()" class="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition active:scale-95 shadow-md">
-          <i data-lucide="download" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Exportar</span>
-        </button>
-      </div>
+      <button class="btn btn-qr" onclick="generateOrderQR()" title="Generar QR para pistolear desde la PDA">📱 QR Picking</button>
+      <button class="btn btn-camera" onclick="toggleCamera()">📷 Cámara</button>
+      <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()">☀️ Modo Claro</button>
+      <button class="btn btn-secondary" onclick="exportReport()">📥 Exportar</button>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="max-w-7xl mx-auto p-3 sm:p-5 flex-1 flex flex-col w-full space-y-4">
+  <!-- Visor de Cámara -->
+  <div id="camera-container" class="card">
+    <div id="reader"></div>
+  </div>
 
-    <!-- Feedback Banner de Escaneo / Alertas de Audio -->
-    <div id="scanAlertBox" class="transition-all duration-200 hidden rounded-2xl p-3.5 shadow-xl border flex items-center justify-between">
-      <div class="flex items-center space-x-3 min-w-0">
-        <div id="scanAlertIcon" class="p-2 rounded-xl text-white font-bold shrink-0"></div>
-        <div class="min-w-0">
-          <div id="scanAlertTitle" class="text-xs sm:text-sm font-black uppercase tracking-wider truncate"></div>
-          <div id="scanAlertMessage" class="text-xs font-medium truncate"></div>
-        </div>
-      </div>
-      <button onclick="dismissScanAlert()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 ml-2">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
-    </div>
+  <!-- Banner de escaneo -->
+  <div id="feedback"></div>
 
-    <!-- Visor Retráctil de Cámara (Para smartphones o tablets) -->
-    <section id="cameraScannerSection" class="hidden bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-200 dark:border-slate-800">
-      <div class="flex justify-between items-center mb-3">
-        <div class="flex items-center space-x-2 text-slate-900 dark:text-white">
-          <i data-lucide="scan-line" class="w-5 h-5 text-sky-600 dark:text-sky-400 animate-pulse"></i>
-          <span class="font-bold text-sm">Escáner Activo por Cámara</span>
-        </div>
-        <div class="flex items-center space-x-2">
-          <select id="cameraSourceSelect" onchange="changeCameraSource(this.value)" class="text-xs bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg p-1.5 focus:ring-1 focus:ring-sky-500 font-medium">
-            <option value="">Detectando cámaras...</option>
-          </select>
-          <button onclick="toggleCameraScanner()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-      </div>
-      <div class="relative w-full max-w-sm mx-auto overflow-hidden rounded-xl bg-black aspect-video flex items-center justify-center border-2 border-sky-500/50">
-        <div id="reader" class="w-full h-full"></div>
-      </div>
-      <p class="text-center text-xs text-slate-500 dark:text-slate-400 mt-2">Apunta hacia el código de barras EAN o al código QR de la Orden</p>
-    </section>
+  <!-- Foco activo -->
+  <div id="focusNotice">
+    <span>🔍 Localizado: <strong id="focusItemName">---</strong></span>
+    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="clearSpotlight()">Quitar Foco</button>
+  </div>
 
-    <!-- Indicador de Spotlight Activo (Guía visual al tocar EAN) -->
-    <div id="spotlightIndicator" class="hidden bg-sky-50 dark:bg-sky-950/70 border border-sky-300 dark:border-sky-600/50 rounded-xl p-3 items-center justify-between shadow-sm transition">
-      <div class="flex items-center space-x-2 text-sky-900 dark:text-sky-200 min-w-0">
-        <span class="flex h-3 w-3 relative shrink-0">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-        </span>
-        <span class="text-xs font-bold text-sky-700 dark:text-sky-300 shrink-0">Artículo Localizado:</span>
-        <span id="spotlightDesc" class="text-xs font-semibold text-slate-900 dark:text-white truncate max-w-md"></span>
+  <!-- KPIs de verificación -->
+  <div class="card">
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-val" id="kpiDone">0 / 0</div>
+        <div class="kpi-label">Referencias Listas</div>
       </div>
-      <button onclick="clearSpotlight()" class="text-xs font-bold text-sky-800 dark:text-sky-300 hover:text-sky-950 dark:hover:text-white bg-sky-200/70 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 px-2.5 py-1 rounded-lg transition shrink-0 ml-2">
-        Quitar Foco
-      </button>
-    </div>
-
-    <!-- Panel de Métricas / KPIs de Almacén -->
-    <section class="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div>
-          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Referencias</span>
-          <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="kpiRefsSummary">0 / 0</div>
-          <span class="text-[11px] text-sky-600 dark:text-sky-400 font-semibold" id="kpiRefsPercent">0% cotejadas</span>
-        </div>
-        <div class="p-2.5 bg-sky-50 dark:bg-slate-950 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-slate-800 rounded-xl">
-          <i data-lucide="boxes" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-        </div>
+      <div class="kpi-box">
+        <div class="kpi-val" style="color: var(--warning);" id="kpiPendingUnits">0</div>
+        <div class="kpi-label">Unidades Faltantes</div>
       </div>
-
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div>
-          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Uds. Físicas</span>
-          <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="kpiUnitsSummary">0 / 0</div>
-          <span class="text-[11px] text-amber-600 dark:text-amber-400 font-semibold" id="kpiRemainingUnits">0 faltantes</span>
-        </div>
-        <div class="p-2.5 bg-amber-50 dark:bg-slate-950 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-slate-800 rounded-xl">
-          <i data-lucide="layers" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div>
-          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Completadas</span>
-          <div class="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400" id="kpiCompletedCount">0</div>
-          <span class="text-[11px] text-emerald-600 dark:text-emerald-500 font-semibold">100% OK</span>
-        </div>
-        <div class="p-2.5 bg-emerald-50 dark:bg-slate-950 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-slate-800 rounded-xl">
-          <i data-lucide="check-circle-2" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
-        <div>
-          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Discrepancias</span>
-          <div class="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400" id="kpiDiscrepanciesCount">0</div>
-          <span class="text-[11px] text-rose-600 dark:text-rose-400 font-semibold">Excesos detectados</span>
-        </div>
-        <div class="p-2.5 bg-rose-50 dark:bg-slate-950 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-slate-800 rounded-xl">
-          <i data-lucide="alert-triangle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-        </div>
-      </div>
-    </section>
-
-    <!-- Barra de Progreso Global del Albarán -->
-    <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
-      <div class="flex justify-between items-center text-xs font-semibold">
-        <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-bold">
-          <i data-lucide="activity" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i> Progreso General de Preparación
-        </span>
-        <span id="progressBarText" class="font-mono-code font-black text-sky-600 dark:text-sky-400 text-sm">0%</span>
-      </div>
-      <div class="w-full bg-slate-200 dark:bg-slate-950 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-300 dark:border-slate-800">
-        <div id="progressBarFill" class="bg-gradient-to-r from-sky-500 via-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-300 w-0"></div>
-      </div>
-    </div>
-
-    <!-- Barra de Búsqueda y Filtros de Estado -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-      
-      <!-- Búsqueda Manual / Escaneo Manual -->
-      <div class="flex-1 relative">
-        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <i data-lucide="search" class="w-4 h-4"></i>
-        </div>
-        <input 
-          type="text" 
-          id="searchInput" 
-          oninput="handleSearch(this.value)"
-          placeholder="Buscar descripción, SKU o pistolear/pegar EAN..." 
-          class="w-full pl-10 pr-24 py-2.5 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium text-slate-900 dark:text-white transition placeholder:text-slate-400 dark:placeholder:text-slate-500"
-        >
-        <button 
-          onclick="triggerManualScanFromInput()" 
-          title="Verificar y centrar código"
-          class="absolute inset-y-1 right-1 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold flex items-center space-x-1 active:scale-95 transition"
-        >
-          <i data-lucide="scan" class="w-3.5 h-3.5"></i>
-          <span>Check</span>
-        </button>
-      </div>
-
-      <!-- Filtros de Estado -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-        <button onclick="setFilter('all')" id="filter-all" class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-sky-600 text-white shadow-sm">
-          Todos (<span id="count-all">0</span>)
-        </button>
-        <button onclick="setFilter('pending')" id="filter-pending" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
-          Pendientes (<span id="count-pending">0</span>)
-        </button>
-        <button onclick="setFilter('completed')" id="filter-completed" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
-          Listos (<span id="count-completed">0</span>)
-        </button>
-        <button onclick="setFilter('issues')" id="filter-issues" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800">
-          Excesos (<span id="count-issues">0</span>)
-        </button>
-      </div>
-
-      <!-- Reset / Limpiar -->
-      <div class="flex items-center justify-end gap-1.5">
-        <button onclick="confirmResetList()" title="Vaciar checklist" class="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition border border-transparent hover:border-rose-200 dark:hover:border-rose-900/60">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Lista Dinámica de Referencias -->
-    <section class="flex-1 overflow-hidden flex flex-col">
-      <div id="listContainer" class="space-y-2.5 overflow-y-auto pb-16">
-        <!-- Tarjetas dinámicas inyectadas por JavaScript -->
-      </div>
-
-      <!-- Estado Vacío -->
-      <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-900/60 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-800 p-6 my-auto shadow-sm">
-        <div class="w-16 h-16 bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 rounded-2xl flex items-center justify-center mb-3">
-          <i data-lucide="qr-code" class="w-8 h-8"></i>
-        </div>
-        <h3 class="text-base font-bold text-slate-900 dark:text-white">No hay orden cargada</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1 mb-5">
-          Escanéa con tu láser el <b>código QR de Picking</b> desde otra pantalla/papel o carga un albarán PDF/CSV.
-        </p>
-        <div class="flex flex-wrap justify-center gap-2">
-          <button onclick="openModal('importModal')" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-2">
-            <i data-lucide="file-up" class="w-4 h-4"></i>
-            <span>Cargar PDF de Odoo / CSV</span>
-          </button>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- MODAL: Generador de QR Picking para PDAs -->
-  <div id="qrGeneratorModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 text-center">
-      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div class="flex items-center space-x-2 text-left">
-          <div class="p-2 bg-amber-500/20 text-amber-500 dark:text-amber-400 rounded-xl border border-amber-500/40">
-            <i data-lucide="qr-code" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-extrabold text-slate-900 dark:text-white text-base">QR de Picking para PDA</h3>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Escaneo instantáneo sin cables ni servidores</p>
-          </div>
-        </div>
-        <button onclick="closeModal('qrGeneratorModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="p-3 bg-white rounded-2xl inline-block shadow-inner mx-auto my-2 border-4 border-slate-200 dark:border-slate-800">
-        <div id="qrcodeCanvas" class="flex justify-center items-center"></div>
-      </div>
-
-      <div class="text-left bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-          <span>Referencias codificadas:</span>
-          <span id="qrLinesCount" class="font-mono-code font-bold text-amber-600 dark:text-amber-400">0</span>
-        </div>
-        <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-          <span>Unidades totales:</span>
-          <span id="qrUnitsCount" class="font-mono-code font-bold text-slate-900 dark:text-white">0</span>
-        </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-800/80">
-          Apunta con el lector láser de la PDA a la pantalla del monitor o imprime este ticket.
-        </p>
-      </div>
-
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="printQrTicket()" class="flex-1 py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 border border-slate-300 dark:border-slate-700 transition">
-          <i data-lucide="printer" class="w-4 h-4"></i>
-          <span>Imprimir Ticket</span>
-        </button>
-        <button onclick="closeModal('qrGeneratorModal')" class="py-2.5 px-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-xs transition">
-          Listo
-        </button>
+      <div class="kpi-box">
+        <div class="kpi-val" style="color: var(--success);" id="kpiScannedUnits">0</div>
+        <div class="kpi-label">Unidades Verificadas</div>
       </div>
     </div>
   </div>
 
-  <!-- Ticket de Impresión Oculto (Visible solo al imprimir) -->
-  <div id="printArea" class="hidden p-6 text-black bg-white">
-    <div style="text-align: center; border-bottom: 2px dashed #333; padding-bottom: 12px; margin-bottom: 15px;">
-      <h2 style="font-size: 20px; font-weight: 900; margin: 0;">PACKCHECK PRO</h2>
-      <p style="font-size: 11px; margin: 4px 0; font-family: monospace; font-weight: bold;">(A MORALEJO BRAND)</p>
-      <p style="font-size: 13px; font-weight: bold; margin: 4px 0;">ORDEN DE PICKING / PACKING LIST</p>
-      <span id="printDate" style="font-size: 10px; color: #555;"></span>
+  <!-- Barra de Filtros -->
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="Filtrar por SKU, EAN o descripción..." oninput="renderList()">
+    <button class="chip active" onclick="setFilter('all', this)">Todos</button>
+    <button class="chip" onclick="setFilter('pending', this)">Pendientes</button>
+    <button class="chip" onclick="setFilter('done', this)">Completos</button>
+    <button class="chip" onclick="setFilter('overflow', this)">Excesos</button>
+  </div>
+
+  <!-- Contenedor del listado -->
+  <div class="item-list" id="checklistContainer">
+    <div class="card" style="text-align: center; color: var(--text-muted); padding: 30px;">
+      Carga un albarán PDF de Odoo o un CSV para comenzar. También puedes pistolear un código <strong>QR de Picking</strong> con la PDA.
     </div>
-    <div style="text-align: center; margin: 15px 0;">
-      <div id="printQrTarget" style="display: inline-block;"></div>
-      <p style="font-size: 11px; font-weight: bold; margin-top: 8px;">ESCANEAR ESTE QR CON LA PDA PARA CARGAR</p>
-    </div>
-    <div style="font-size: 11px; border-top: 1px solid #ccc; padding-top: 10px;">
-      <div style="display: flex; justify-content: space-between; font-weight: bold;">
-        <span>Artículos: <span id="printTotalLines">0</span></span>
-        <span>Uds: <span id="printTotalUnits">0</span></span>
+  </div>
+
+  <!-- Modal de Revisión / Confirmación -->
+  <div id="previewModal" class="modal-backdrop">
+    <div class="modal-card">
+      <h3>Artículos Detectados en el Albarán</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Las líneas con el mismo EAN se han consolidado sumando sus unidades totales:
+      </p>
+      <div id="previewTableContainer"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="closeModal('previewModal')">Cancelar</button>
+        <button class="btn" onclick="confirmImport()">Confirmar e Iniciar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Importación PDF / CSV -->
-  <div id="importModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div class="flex items-center space-x-2">
-          <div class="p-2 bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-500/40">
-            <i data-lucide="file-up" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">Cargar Packing List</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">PDF de Odoo o archivos CSV / TXT</p>
-          </div>
-        </div>
-        <button onclick="closeModal('importModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Archivo de albarán (.PDF, .CSV, .TXT)</label>
-        <input type="file" id="generalFileInput" accept=".pdf, .csv, .txt" class="block w-full text-xs text-slate-600 dark:text-slate-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-600 file:text-white hover:file:bg-sky-500 border border-slate-300 dark:border-slate-700 rounded-xl p-1 bg-slate-50 dark:bg-slate-950">
-        <p class="text-[11px] text-slate-500 mt-1">Extrae automáticamente códigos EAN, referencias y cantidades del albarán de Odoo.</p>
-      </div>
-
-      <div class="flex items-center text-xs text-slate-400 dark:text-slate-600 my-1">
-        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-        <span class="px-2 font-bold text-slate-400 dark:text-slate-500">O PEGAR TEXTO DEL PEDIDO</span>
-        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Formato: ean, sku, descripcion, cantidad</label>
-        <textarea id="csvPasteInput" rows="3" placeholder="8412345000018, SKU-01, Taladro Percutor 850W, 3&#10;8412345000025, SKU-02, Brocas Metal HSS, 5" class="w-full text-xs font-mono-code p-2.5 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"></textarea>
-      </div>
-
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeModal('importModal')" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition">
-          Cancelar
-        </button>
-        <button onclick="handleFileInputProcessing()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl shadow-md transition">
-          Procesar Datos
-        </button>
+  <!-- Modal de Código QR para Picking -->
+  <div id="qrModal" class="modal-backdrop">
+    <div class="modal-card" style="text-align: center;">
+      <h3>QR de Picking de la Orden</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Apunta con el láser de la PDA a este código QR para cargar todo el albarán en 1 segundo:
+      </p>
+      <div id="qrcodeContainer"></div>
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;">
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Imprimir</button>
+        <button class="btn" onclick="closeModal('qrModal')">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Ajuste Numérico para Guantes de Almacén -->
-  <div id="manualQtyModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
-        <h3 class="font-bold text-slate-900 dark:text-white text-sm">Fijar Cantidad Verificada</h3>
-        <button onclick="closeModal('manualQtyModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <div>
-        <p id="modalItemDesc" class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 mb-1"></p>
-        <p id="modalItemEan" class="text-[11px] font-mono-code text-slate-500 dark:text-slate-400 mb-4"></p>
-        
-        <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">Unidades comprobadas:</label>
-        <div class="flex items-center space-x-3">
-          <button onclick="adjustModalInput(-1)" class="w-12 h-12 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-300 dark:border-slate-700">-</button>
-          <input type="number" id="modalQtyInput" min="0" class="flex-1 text-center font-mono-code font-black text-2xl py-2 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-sky-500 focus:outline-none">
-          <button onclick="adjustModalInput(1)" class="w-12 h-12 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-black rounded-2xl active:scale-95 text-xl border border-slate-300 dark:border-slate-700">+</button>
-        </div>
-      </div>
-      <div class="flex justify-end space-x-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button onclick="closeModal('manualQtyModal')" class="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold">Cancelar</button>
-        <button onclick="saveManualQty()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold shadow-md">Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: Previsualización de Artículos Detectados en PDF -->
-  <div id="pdfPreviewModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-        <div class="flex items-center space-x-2">
-          <div class="p-2 bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-500/40">
-            <i data-lucide="file-check" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">Albarán PDF Detectado</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Verifica las referencias extraídas del albarán de Odoo antes de empezar</p>
-          </div>
-        </div>
-        <button onclick="closeModal('pdfPreviewModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="max-h-72 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-2xl">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 sticky top-0 border-b border-slate-200 dark:border-slate-800">
-            <tr>
-              <th class="p-2.5 font-bold">EAN</th>
-              <th class="p-2.5 font-bold">Descripción</th>
-              <th class="p-2.5 font-bold text-center">Cant.</th>
-            </tr>
-          </thead>
-          <tbody id="pdfPreviewTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200 font-medium">
-          </tbody>
-        </table>
-      </div>
-
-      <div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
-        <span class="text-slate-500 dark:text-slate-400 font-semibold" id="pdfPreviewSummary">0 líneas listas</span>
-        <div class="flex space-x-2">
-          <button onclick="closeModal('pdfPreviewModal')" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl transition">
-            Cancelar
-          </button>
-          <button onclick="confirmPdfImport()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-md transition">
-            Confirmar e Iniciar
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
   <script>
-    // Inicialización del Worker de PDF.js
-    if (window.pdfjsLib) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    }
+    // Inicializar Worker de PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // --- Manejo del Tema Claro / Oscuro con Lógica de Botón Corregida ---
-    function initTheme() {
-      const savedTheme = localStorage.getItem('packcheck_theme') || 'light';
-      applyTheme(savedTheme);
-    }
-
-    function toggleTheme() {
-      const isDark = document.documentElement.classList.contains('dark');
-      const newTheme = isDark ? 'light' : 'dark';
-      applyTheme(newTheme);
-      localStorage.setItem('packcheck_theme', newTheme);
-    }
-
-    function applyTheme(theme) {
-      const root = document.documentElement;
-      const sunIcon = document.getElementById('themeIconSun');
-      const moonIcon = document.getElementById('themeIconMoon');
-      const label = document.getElementById('themeLabel');
-      const btn = document.getElementById('themeToggleBtn');
-
-      if (theme === 'dark') {
-        root.classList.add('dark');
-        root.classList.remove('html-light');
-        // Si estamos en MODO OSCURO, el botón ofrece pasar a MODO CLARO
-        if (sunIcon) sunIcon.classList.remove('hidden');
-        if (moonIcon) moonIcon.classList.add('hidden');
-        if (label) label.textContent = 'Modo Claro';
-        if (btn) btn.title = 'Cambiar a Modo Claro';
-      } else {
-        root.classList.remove('dark');
-        root.classList.add('html-light');
-        // Si estamos en MODO CLARO, el botón ofrece pasar a MODO OSCURO
-        if (sunIcon) sunIcon.classList.add('hidden');
-        if (moonIcon) moonIcon.classList.remove('hidden');
-        if (label) label.textContent = 'Modo Oscuro';
-        if (btn) btn.title = 'Cambiar a Modo Oscuro';
-      }
-      lucide.createIcons();
-    }
-
-    // Estado Reactivo Principal
     let items = [];
-    let tempPdfItems = [];
-    let activeFilter = 'all';
-    let searchQuery = '';
-    let currentSpotlightIndex = null;
-    let editingIndex = null;
+    let tempParsedItems = [];
+    let currentFilter = 'all';
+    let focusedEan = null;
     let html5QrCode = null;
-    let isCameraActive = false;
-    let celebrationTriggered = false;
+    let cameraActive = false;
 
-    // Buffer del Lector Láser HID
-    let barcodeBuffer = '';
-    let lastKeyTime = Date.now();
-
-    // Motor de Audio Sintetizado (Web Audio API)
-    let audioCtx = null;
-    function getAudioContext() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // --- Motor de Audio (Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      return audioCtx;
-    }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
 
-    function playBeepSuccess() {
-      try {
-        const ctx = getAudioContext();
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.connect(gain);
-        gain.connect(ctx.destination);
+      const now = audioCtx.currentTime;
+      if (type === 'ok') {
         osc.frequency.setValueAtTime(880, now);
-        osc.frequency.setValueAtTime(1320, now + 0.05);
-        gain.gain.setValueAtTime(0.18, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-        osc.start(now);
-        osc.stop(now + 0.16);
-      } catch (e) {}
-    }
-
-    function playBeepOrderLoaded() {
-      try {
-        const ctx = getAudioContext();
-        const freqs = [440, 554.37, 659.25, 880];
-        freqs.forEach((f, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const now = ctx.currentTime + (i * 0.06);
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(f, now);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
-          osc.start(now);
-          osc.stop(now + 0.15);
-        });
-      } catch (e) {}
-    }
-
-    function playBeepLocate() {
-      try {
-        const ctx = getAudioContext();
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(1320, now + 0.07);
+        gain.gain.setValueAtTime(0.15, now);
+        osc.start();
+        osc.stop(now + 0.15);
+      } else if (type === 'locate') {
+        osc.frequency.setValueAtTime(587.33, now);
         gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
-        osc.start(now);
+        osc.start();
         osc.stop(now + 0.12);
-      } catch (e) {}
-    }
-
-    function playBeepError() {
-      try {
-        const ctx = getAudioContext();
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(200, now);
-        osc.frequency.linearRampToValueAtTime(120, now + 0.22);
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
-        osc.start(now);
-        osc.stop(now + 0.3);
-      } catch (e) {}
-    }
-
-    function playFanfareSuccess() {
-      try {
-        const ctx = getAudioContext();
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-          const now = ctx.currentTime + (idx * 0.09);
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          gain.gain.setValueAtTime(0.18, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
-          osc.start(now);
-          osc.stop(now + 0.24);
-        });
-      } catch (e) {}
-    }
-
-    // Persistencia Local (LocalStorage)
-    function persistToStorage() {
-      try {
-        localStorage.setItem('packcheck_items_v2', JSON.stringify(items));
-      } catch (e) {}
-    }
-
-    function loadFromStorage() {
-      try {
-        const saved = localStorage.getItem('packcheck_items_v2');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            items = parsed;
-          }
-        }
-      } catch (e) {}
-    }
-
-    // Protocolo PK1:
-    // Formato compacto: ean~sku~desc~expected delimitado por |
-    function encodeOrderToPayload(itemList) {
-      const compactLines = itemList.map(i => {
-        const cleanEan = (i.ean || '').replace(/[~|]/g, '');
-        const cleanSku = (i.sku || '').replace(/[~|]/g, '');
-        const cleanDesc = (i.desc || '').replace(/[~|]/g, '').slice(0, 40);
-        return `${cleanEan}~${cleanSku}~${cleanDesc}~${i.expected}`;
-      }).join('|');
-
-      const encoded = btoa(unescape(encodeURIComponent(compactLines)));
-      return `PK1:${encoded}`;
-    }
-
-    function decodePayloadToOrder(payload) {
-      if (!payload.startsWith('PK1:')) return null;
-      try {
-        const raw = payload.slice(4);
-        const decoded = decodeURIComponent(escape(atob(raw)));
-        const rows = decoded.split('|');
-        const parsed = [];
-
-        rows.forEach(r => {
-          const parts = r.split('~');
-          if (parts.length >= 4) {
-            parsed.push({
-              ean: parts[0].trim(),
-              sku: parts[1].trim(),
-              desc: parts[2].trim(),
-              expected: parseInt(parts[3], 10) || 1,
-              verified: 0
-            });
-          }
-        });
-        return parsed.length > 0 ? parsed : null;
-      } catch (e) {
-        console.error("Payload decode error:", e);
-        return null;
-      }
-    }
-
-    function openQrGeneratorModal() {
-      if (items.length === 0) {
-        showScanAlert('error', 'Lista vacía', 'Carga primero un albarán PDF o CSV para generar el QR de picking.');
-        return;
-      }
-
-      const payload = encodeOrderToPayload(items);
-      const container = document.getElementById('qrcodeCanvas');
-      container.innerHTML = '';
-
-      new QRCode(container, {
-        text: payload,
-        width: 250,
-        height: 250,
-        colorDark: "#0284c7",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      const printTarget = document.getElementById('printQrTarget');
-      printTarget.innerHTML = '';
-      new QRCode(printTarget, {
-        text: payload,
-        width: 220,
-        height: 220,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      let totalUnits = 0;
-      items.forEach(i => totalUnits += i.expected);
-
-      document.getElementById('qrLinesCount').textContent = items.length;
-      document.getElementById('qrUnitsCount').textContent = totalUnits;
-      document.getElementById('printTotalLines').textContent = items.length;
-      document.getElementById('printTotalUnits').textContent = totalUnits;
-      document.getElementById('printDate').textContent = new Date().toLocaleString();
-
-      openModal('qrGeneratorModal');
-    }
-
-    function printQrTicket() {
-      window.print();
-    }
-
-    async function handleFileInputProcessing() {
-      const fileInput = document.getElementById('generalFileInput');
-      const textInput = document.getElementById('csvPasteInput').value.trim();
-
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        if (file.name.toLowerCase().endsWith('.pdf')) {
-          await parsePDFFile(file);
-        } else {
-          parseCSVFile(file);
-        }
-        closeModal('importModal');
-        fileInput.value = '';
-      } else if (textInput.length > 0) {
-        parseCSVText(textInput);
-        closeModal('importModal');
-        document.getElementById('csvPasteInput').value = '';
+      } else if (type === 'load') {
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(660, now + 0.08);
+        osc.frequency.setValueAtTime(880, now + 0.16);
+        gain.gain.setValueAtTime(0.18, now);
+        osc.start();
+        osc.stop(now + 0.25);
       } else {
-        alert("Por favor selecciona un archivo PDF/CSV o pega datos en el campo de texto.");
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        gain.gain.setValueAtTime(0.2, now);
+        osc.start();
+        osc.stop(now + 0.3);
       }
     }
 
-    async function parsePDFFile(file) {
-      showScanAlert('info', 'Leyendo albarán PDF...', 'Extrayendo capas de texto del documento.');
+    // --- Gestión de Tema Claro/Oscuro ---
+    function initTheme() {
+      const saved = localStorage.getItem('packcheck_theme') || 'dark';
+      applyTheme(saved);
+    }
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('packcheck_theme', theme);
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        if (theme === 'dark') {
+          btn.innerHTML = '☀️ Modo Claro';
+          btn.title = 'Cambiar a Modo Claro';
+        } else {
+          btn.innerHTML = '🌙 Modo Oscuro';
+          btn.title = 'Cambiar a Modo Oscuro';
+        }
+      }
+    }
+    initTheme();
+
+    // --- Parser de Archivos (PDF / CSV) ---
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        await parsePDF(file);
+      } else {
+        parseCSV(file);
+      }
+      this.value = '';
+    });
+
+    // --- Parser de PDF adaptado a Visiotech / Odoo con CONSOLIDACIÓN ---
+    async function parsePDF(file) {
+      showFeedback('Extrayendo y consolidando artículos del PDF...', true);
       try {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
+        let allLines = [];
 
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
-          let pageStr = '';
-          let lastY = null;
-          for (const item of textContent.items) {
-            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-              pageStr += '\n';
+          
+          // Agrupar elementos por posición vertical Y
+          const itemsByY = {};
+          textContent.items.forEach(item => {
+            const y = Math.round(item.transform[5]);
+            let foundY = Object.keys(itemsByY).find(key => Math.abs(key - y) <= 3);
+            if (!foundY) {
+              foundY = y;
+              itemsByY[foundY] = [];
             }
-            pageStr += item.str + ' ';
-            lastY = item.transform[5];
-          }
-          fullText += pageStr + '\n';
+            itemsByY[foundY].push(item);
+          });
+
+          // Ordenar de arriba a abajo y de izquierda a derecha
+          const sortedYs = Object.keys(itemsByY).sort((a, b) => b - a);
+          sortedYs.forEach(y => {
+            const rowItems = itemsByY[y].sort((a, b) => a.transform[4] - b.transform[4]);
+            const rowText = rowItems.map(i => i.str.trim()).filter(Boolean).join(' ');
+            if (rowText.length > 0) allLines.push(rowText);
+          });
         }
 
-        extractItemsFromPdfText(fullText);
+        extractItemsFromLines(allLines);
       } catch (err) {
-        console.error("PDF parse error:", err);
-        showScanAlert('error', 'Error al leer PDF', 'Verifica que el PDF no sea una imagen escaneada sin capa de texto.');
+        showFeedback('❌ Error al procesar el PDF: ' + err.message, false);
       }
     }
 
-    function extractItemsFromPdfText(text) {
-      const lines = text.split('\n');
-      const extracted = [];
-      const eanRegex = /\b(\d{13}|\d{8})\b/;
+    function extractItemsFromLines(lines) {
+      tempParsedItems = [];
+      const eanRegex = /\b(\d{13}|\d{12}|\d{8})\b/;
 
-      lines.forEach(line => {
-        const clean = line.trim();
-        const match = clean.match(eanRegex);
-        if (match) {
-          const ean = match[1];
-          const withoutEan = clean.replace(ean, '');
-          const numbers = withoutEan.match(/\b\d+\b/g);
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
 
-          let qty = 1;
-          if (numbers && numbers.length > 0) {
-            qty = parseInt(numbers[numbers.length - 1], 10) || 1;
+        // Omitir cabeceras, pies de página o bloques de números de serie
+        if (
+          line.startsWith('Serial') || 
+          line.includes('VISIOTECH') || 
+          line.includes('Cliente:') || 
+          line.includes('Albarán') || 
+          line.includes('Spagna') || 
+          line.includes('CIF:') || 
+          line.includes('Pedido Visiotech') ||
+          line.includes('Questo documento') ||
+          line.includes('Fecha de impresión') ||
+          line.startsWith('Impuestos') ||
+          line.startsWith('No Pack')
+        ) {
+          continue;
+        }
+
+        const eanMatch = line.match(eanRegex);
+        if (eanMatch) {
+          const ean = eanMatch[1];
+          const parts = line.split(ean);
+          let beforeEan = parts[0].trim();
+          let afterEan = parts[1] ? parts[1].trim() : '';
+
+          // 1. Extraer SKU (última palabra previa al EAN)
+          let sku = 'SKU-' + ean.slice(-4);
+          let descPrefix = '';
+          if (beforeEan.length > 0) {
+            const beforeWords = beforeEan.split(/\s+/);
+            sku = beforeWords[beforeWords.length - 1];
+            descPrefix = beforeWords.slice(0, -1).join(' ');
           }
 
-          let desc = withoutEan.replace(/\b\d+\b/g, '').replace(/\s+/g, ' ').trim();
-          if (!desc) desc = "Artículo EAN " + ean;
+          // 2. Limpiar residuos de precios, descuentos y símbolos
+          let cleanAfter = afterEan
+            .replace(/\b\d+([.,]\d+)?\s*%/g, '')
+            .replace(/\b\d+([.,]\d+)?\s*€/g, '')
+            .replace(/,\s*€/g, '')
+            .replace(/%\s*,/g, '')
+            .trim();
 
-          extracted.push({
-            ean: ean,
-            sku: "SKU-" + ean.slice(-4),
-            desc: desc,
-            expected: qty,
-            verified: 0
-          });
+          // 3. Extraer Cantidad esperada
+          const numbers = cleanAfter.match(/\b\d+\b/g);
+          let qty = 1;
+          let desc = cleanAfter;
+
+          if (numbers && numbers.length > 0) {
+            qty = parseInt(numbers[numbers.length - 1], 10) || 1;
+            const lastNumIdx = desc.lastIndexOf(numbers[numbers.length - 1]);
+            if (lastNumIdx !== -1) {
+              desc = desc.substring(0, lastNumIdx).trim();
+            }
+          }
+
+          desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
+          if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
+
+          // 4. CONSOLIDACIÓN DE LÍNEAS DUPLICADAS:
+          const existingItem = tempParsedItems.find(item => item.ean === ean);
+          if (existingItem) {
+            existingItem.expected += qty;
+          } else {
+            tempParsedItems.push({
+              ean: ean,
+              sku: sku,
+              desc: desc,
+              expected: qty,
+              scanned: 0,
+              orderIndex: tempParsedItems.length
+            });
+          }
         }
-      });
+      }
 
-      if (extracted.length === 0) {
-        showScanAlert('error', 'Sin códigos EAN', 'No se encontraron códigos EAN en el PDF.');
+      if (tempParsedItems.length === 0) {
+        showFeedback('❌ No se encontraron artículos válidos con EAN en el PDF.', false);
         return;
       }
 
-      tempPdfItems = extracted;
-      const tbody = document.getElementById('pdfPreviewTableBody');
-      tbody.innerHTML = tempPdfItems.map(item => `
-        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-          <td class="p-2.5 font-mono-code font-bold text-sky-600 dark:text-sky-400">${item.ean}</td>
-          <td class="p-2.5 font-semibold text-slate-800 dark:text-slate-200 line-clamp-1">${item.desc}</td>
-          <td class="p-2.5 text-center font-black font-mono-code">${item.expected}</td>
-        </tr>
-      `).join('');
-
-      document.getElementById('pdfPreviewSummary').textContent = `${tempPdfItems.length} referencias detectadas`;
-      openModal('pdfPreviewModal');
+      showPreviewModal();
     }
 
-    function confirmPdfImport() {
-      if (tempPdfItems.length > 0) {
-        items = [...tempPdfItems];
-        tempPdfItems = [];
-        currentSpotlightIndex = null;
-        closeModal('pdfPreviewModal');
-        persistToStorage();
-        renderList();
-        playBeepOrderLoaded();
-        showScanAlert('success', 'Albarán PDF Cargado', `Se importaron ${items.length} líneas de pedido.`);
-      }
+    function showPreviewModal() {
+      const container = document.getElementById('previewTableContainer');
+      let totalUds = 0;
+      let html = `<table><tr><th>SKU</th><th>EAN</th><th>Descripción</th><th style="text-align:right;">Uds</th></tr>`;
+      tempParsedItems.forEach(i => {
+        totalUds += i.expected;
+        html += `<tr><td><strong>${i.sku}</strong></td><td>${i.ean}</td><td>${i.desc}</td><td style="text-align:right; font-weight:bold;">${i.expected}</td></tr>`;
+      });
+      html += `<tr style="background: var(--surface-card); font-weight:bold;"><td colspan="3">Total Unidades Consolidadas</td><td style="text-align:right;">${totalUds}</td></tr>`;
+      html += `</table>`;
+      container.innerHTML = html;
+      document.getElementById('previewModal').style.display = 'flex';
     }
 
-    function parseCSVFile(file) {
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function confirmImport() {
+      items = [...tempParsedItems];
+      closeModal('previewModal');
+      saveState();
+      renderList();
+      showFeedback(`✓ Cargadas ${items.length} referencias consolidadas`, true);
+    }
+
+    // --- Parser CSV con CONSOLIDACIÓN ---
+    function parseCSV(file) {
       const reader = new FileReader();
-      reader.onload = (e) => parseCSVText(e.target.result);
+      reader.onload = (evt) => {
+        const text = evt.target.result;
+        tempParsedItems = [];
+        const lines = text.trim().split(/\r\n|\n/);
+        if (lines.length < 2) return;
+        const sep = lines[0].includes(';') ? ';' : ',';
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(sep);
+          if (row.length >= 4) {
+            const ean = row[0].trim();
+            const sku = row[1].trim();
+            const desc = row[2].trim();
+            const qty = parseInt(row[3].trim(), 10) || 0;
+
+            const existing = tempParsedItems.find(it => it.ean === ean);
+            if (existing) {
+              existing.expected += qty;
+            } else {
+              tempParsedItems.push({ 
+                ean, 
+                sku, 
+                desc, 
+                expected: qty, 
+                scanned: 0, 
+                orderIndex: tempParsedItems.length 
+              });
+            }
+          }
+        }
+        showPreviewModal();
+      };
       reader.readAsText(file);
     }
 
-    function parseCSVText(rawText) {
-      const lines = rawText.trim().split(/\r\n|\n/);
-      if (lines.length === 0) return;
-      const sep = lines[0].includes(';') ? ';' : ',';
-      const parsed = [];
-
-      let startIdx = 0;
-      const firstLine = lines[0].toLowerCase();
-      if (firstLine.includes('ean') || firstLine.includes('sku') || firstLine.includes('cant') || firstLine.includes('desc')) {
-        startIdx = 1;
-      }
-
-      for (let i = startIdx; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const cols = line.split(sep).map(c => c.replace(/^"(.*)"$/, '$1').trim());
-        if (cols.length >= 3) {
-          const ean = (cols[0] || '').replace(/[\s-]/g, '');
-          const sku = cols[1] || '';
-          const desc = cols[2] || 'Producto sin descripción';
-          const qty = parseInt(cols[3] || '1', 10) || 1;
-          if (ean) {
-            parsed.push({ ean, sku, desc, expected: qty, verified: 0 });
-          }
-        }
-      }
-
-      if (parsed.length > 0) {
-        items = parsed;
-        currentSpotlightIndex = null;
-        persistToStorage();
-        renderList();
-        playBeepOrderLoaded();
-        showScanAlert('success', 'CSV Importado', `Se cargaron ${items.length} referencias.`);
-      } else {
-        playBeepError();
-        showScanAlert('error', 'Formato CSV Inválido', 'Columnas esperadas: EAN, SKU, DESCRIPCIÓN, CANTIDAD');
-      }
-    }
+    // --- Escáner Global HID (Pistolas Láser en PDA o USB) ---
+    let barcodeBuffer = '';
+    let lastKeyTime = Date.now();
 
     window.addEventListener('keydown', (e) => {
-      const activeEl = document.activeElement;
-      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        if (e.key === 'Enter' && activeEl.id === 'searchInput') {
-          triggerManualScanFromInput();
-          e.preventDefault();
-        }
-        return;
-      }
-
+      if (e.target.tagName === 'INPUT') return;
       const now = Date.now();
-      if (now - lastKeyTime > 95) barcodeBuffer = '';
+      if (now - lastKeyTime > 90) barcodeBuffer = '';
       lastKeyTime = now;
 
       if (e.key === 'Enter') {
-        const scanned = barcodeBuffer.trim();
-        if (scanned.length >= 3) {
-          handleIncomingScan(scanned);
-          e.preventDefault();
-        }
+        if (barcodeBuffer.length > 2) handleBarcodeScanned(barcodeBuffer.trim());
         barcodeBuffer = '';
       } else if (e.key.length === 1) {
         barcodeBuffer += e.key;
       }
     });
 
-    function handleIncomingScan(code) {
+    // --- Gestor Universal de Códigos Leídos (EAN vs QR de Orden) ---
+    function handleBarcodeScanned(code) {
       if (code.startsWith('PK1:')) {
-        const loadedItems = decodePayloadToOrder(code);
-        if (loadedItems) {
-          items = loadedItems;
-          currentSpotlightIndex = null;
-          clearSpotlight();
-          persistToStorage();
-          renderList();
-          playBeepOrderLoaded();
-          showScanAlert('success', '📦 ¡ORDEN QR CARGADA CON ÉXITO!', `Se descargaron ${items.length} referencias para picking en la PDA.`);
-          return;
-        } else {
-          playBeepError();
-          showScanAlert('error', 'QR Corrupto', 'El código QR de picking no pudo ser decodificado.');
-          return;
-        }
+        loadOrderFromQR(code);
+        return;
       }
-
       processProductScan(code);
     }
 
-    function processProductScan(rawCode) {
-      if (items.length === 0) {
-        playBeepError();
-        showScanAlert('warning', 'Sin orden activa', 'Escanea primero el QR de la orden o carga un documento.');
-        return;
-      }
+    function processProductScan(ean) {
+      const cleanEan = ean.trim();
+      const item = items.find(i => i.ean === cleanEan);
 
-      const code = rawCode.trim().replace(/^0+/, '');
-      const index = items.findIndex(item => {
-        const cleanEan = item.ean.trim().replace(/^0+/, '');
-        return cleanEan === code || item.ean === rawCode.trim() || item.sku.toLowerCase() === rawCode.trim().toLowerCase();
-      });
-
-      if (index !== -1) {
-        const item = items[index];
-        item.verified += 1;
-        persistToStorage();
-
-        if (item.verified <= item.expected) {
-          playBeepSuccess();
-          showScanAlert('success', `✓ Leído (+1): ${item.desc}`, `EAN: ${item.ean} | Cantidad: ${item.verified} / ${item.expected}`);
-        } else {
-          playBeepError();
-          showScanAlert('warning', `⚠️ ¡Exceso detectado!`, `${item.desc} suma ${item.verified} de ${item.expected} solicitadas.`);
-        }
-
-        spotlightItem(index, 'scan');
-        checkAllCompletedCelebration();
+      if (item) {
+        item.scanned += 1;
+        playBeep('ok');
+        showFeedback(`✓ Leído: ${item.desc} (${item.scanned}/${item.expected})`, true);
+        applySpotlight(cleanEan);
+        saveState();
+        renderList();
       } else {
-        playBeepError();
-        showScanAlert('error', `❌ EAN no encontrado`, `El código "${rawCode}" no figura en este packing list.`);
+        playBeep('error');
+        showFeedback(`❌ EAN NO ENCONTRADO en el albarán: ${cleanEan}`, false);
       }
     }
 
-    function triggerManualScanFromInput() {
-      const input = document.getElementById('searchInput');
-      const val = input.value.trim();
-      if (!val) return;
-      handleIncomingScan(val);
-      input.value = '';
-      searchQuery = '';
+    // --- Protocolo QR de Picking (Traspaso Orden PC -> PDA) ---
+    function generateOrderQR() {
+      if (items.length === 0) return alert('Primero carga un albarán para generar el QR.');
+
+      const payload = items.map(i => `${i.ean}:${i.expected}:${encodeURIComponent(i.sku)}:${encodeURIComponent(i.desc)}`).join('|');
+      const b64 = btoa(unescape(encodeURIComponent(payload)));
+      const qrData = 'PK1:' + b64;
+
+      const container = document.getElementById('qrcodeContainer');
+      container.innerHTML = '';
+      new QRCode(container, {
+        text: qrData,
+        width: 256,
+        height: 256,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      document.getElementById('qrModal').style.display = 'flex';
+    }
+
+    function loadOrderFromQR(qrString) {
+      try {
+        const b64 = qrString.replace('PK1:', '');
+        const payload = decodeURIComponent(escape(atob(b64)));
+        const rows = payload.split('|');
+
+        items = [];
+        rows.forEach((r, idx) => {
+          const parts = r.split(':');
+          if (parts.length >= 4) {
+            items.push({
+              ean: parts[0],
+              expected: parseInt(parts[1], 10) || 1,
+              sku: decodeURIComponent(parts[2]),
+              desc: decodeURIComponent(parts[3]),
+              scanned: 0,
+              orderIndex: idx
+            });
+          }
+        });
+
+        playBeep('load');
+        saveState();
+        renderList();
+        showFeedback(`✓ ¡Albarán de ${items.length} referencias cargado desde QR!`, true);
+      } catch (err) {
+        playBeep('error');
+        showFeedback('❌ Error al descodificar el QR de Orden: ' + err.message, false);
+      }
+    }
+
+    // --- Cámara Integrada ---
+    function toggleCamera() {
+      const container = document.getElementById('camera-container');
+      if (cameraActive) {
+        html5QrCode.stop().then(() => {
+          container.style.display = 'none';
+          cameraActive = false;
+        });
+      } else {
+        container.style.display = 'block';
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+          { facingMode: "environment" },
+          { fps: 12, qrbox: { width: 280, height: 160 } },
+          (decodedText) => handleBarcodeScanned(decodedText),
+          () => {}
+        ).then(() => {
+          cameraActive = true;
+        }).catch(err => {
+          alert('Error abriendo cámara: ' + err);
+          container.style.display = 'none';
+        });
+      }
+    }
+
+    // --- Spotlight Interactivo ---
+    function triggerSpotlight(ean) {
+      applySpotlight(ean);
+      playBeep('locate');
       renderList();
     }
 
-    async function toggleCameraScanner() {
-      const section = document.getElementById('cameraScannerSection');
-      const select = document.getElementById('cameraSourceSelect');
-
-      if (isCameraActive) {
-        stopCamera();
-      } else {
-        section.classList.remove('hidden');
-        isCameraActive = true;
-
-        try {
-          const cameras = await Html5Qrcode.getCameras();
-          select.innerHTML = '';
-          if (cameras && cameras.length) {
-            cameras.forEach((cam, i) => {
-              const opt = document.createElement('option');
-              opt.value = cam.id;
-              opt.text = cam.label || `Cámara ${i + 1}`;
-              select.appendChild(opt);
-            });
-
-            let selectedId = cameras[0].id;
-            const backCam = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera'));
-            if (backCam) selectedId = backCam.id;
-            select.value = selectedId;
-            startHtml5QrCode(selectedId);
-          } else {
-            alert('No se detectaron cámaras en este dispositivo.');
-            stopCamera();
-          }
-        } catch (err) {
-          alert('Error accediendo a la cámara. Concede permisos en el navegador.');
-          stopCamera();
-        }
-      }
-      lucide.createIcons();
-    }
-
-    function startHtml5QrCode(cameraId) {
-      if (html5QrCode) {
-        html5QrCode.stop().then(() => initReader(cameraId)).catch(() => initReader(cameraId));
-      } else {
-        initReader(cameraId);
-      }
-    }
-
-    function initReader(cameraId) {
-      html5QrCode = new Html5Qrcode("reader");
-      html5QrCode.start(
-        cameraId,
-        { fps: 15, qrbox: { width: 280, height: 160 }, aspectRatio: 1.777778 },
-        (decodedText) => {
-          if (!this.lastCamScan || Date.now() - this.lastCamScan > 900) {
-            this.lastCamScan = Date.now();
-            handleIncomingScan(decodedText);
-          }
-        },
-        () => {}
-      ).catch(e => console.error(e));
-    }
-
-    function changeCameraSource(newCamId) {
-      if (newCamId && isCameraActive) startHtml5QrCode(newCamId);
-    }
-
-    function stopCamera() {
-      const section = document.getElementById('cameraScannerSection');
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => {
-          html5QrCode.clear();
-          section.classList.add('hidden');
-          isCameraActive = false;
-        }).catch(() => {
-          section.classList.add('hidden');
-          isCameraActive = false;
-        });
-      } else {
-        section.classList.add('hidden');
-        isCameraActive = false;
-      }
-    }
-
-    function spotlightItem(originalIndex, cause = 'click') {
-      currentSpotlightIndex = originalIndex;
-      const item = items[originalIndex];
-      if (!item) return;
-
-      if (activeFilter !== 'all') {
-        const status = getItemStatus(item);
-        if (status !== activeFilter) {
-          setFilter('all');
-        }
+    function applySpotlight(ean) {
+      focusedEan = ean;
+      const item = items.find(i => i.ean === ean);
+      const notice = document.getElementById('focusNotice');
+      if (item && notice) {
+        document.getElementById('focusItemName').textContent = `${item.sku} - ${item.desc}`;
+        notice.style.display = 'flex';
       }
 
-      renderList(originalIndex);
-
+      // Auto-centrado suave en la vista
       setTimeout(() => {
-        const element = document.getElementById(`item-card-${originalIndex}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 50);
-
-      const indicator = document.getElementById('spotlightIndicator');
-      const descEl = document.getElementById('spotlightDesc');
-      descEl.textContent = `${item.desc} (EAN: ${item.ean})`;
-      indicator.classList.remove('hidden');
-      indicator.classList.add('flex');
-
-      if (cause === 'click') {
-        playBeepLocate();
-      }
+        const el = document.getElementById('row-' + ean);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 80);
     }
 
     function clearSpotlight() {
-      currentSpotlightIndex = null;
-      document.getElementById('spotlightIndicator').classList.add('hidden');
-      document.getElementById('spotlightIndicator').classList.remove('flex');
+      focusedEan = null;
+      document.getElementById('focusNotice').style.display = 'none';
       renderList();
     }
 
-    function setFilter(filterType) {
-      activeFilter = filterType;
-      ['all', 'pending', 'completed', 'issues'].forEach(f => {
-        const btn = document.getElementById(`filter-${f}`);
-        if (f === filterType) {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-sky-600 text-white shadow-md";
-        } else {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap bg-slate-100 dark:bg-slate-950 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-800";
-        }
-      });
-      renderList();
-    }
-
-    function handleSearch(val) {
-      searchQuery = val.toLowerCase().trim();
-      renderList();
-    }
-
-    function getItemStatus(item) {
-      if (item.verified === item.expected && item.expected > 0) return 'completed';
-      if (item.verified > item.expected) return 'issues';
-      return 'pending';
-    }
-
-    function renderList(highlightIndex = null) {
-      const container = document.getElementById('listContainer');
-      const emptyState = document.getElementById('emptyState');
-
-      let filtered = items.map((item, originalIndex) => ({ ...item, originalIndex }));
-
-      if (searchQuery) {
-        filtered = filtered.filter(item => 
-          item.desc.toLowerCase().includes(searchQuery) ||
-          item.sku.toLowerCase().includes(searchQuery) ||
-          item.ean.includes(searchQuery)
-        );
-      }
-
-      if (activeFilter !== 'all') {
-        filtered = filtered.filter(item => getItemStatus(item) === activeFilter);
-      }
-
-      if (items.length === 0 || filtered.length === 0) {
-        container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        emptyState.classList.add('flex');
-      } else {
-        emptyState.classList.add('hidden');
-        emptyState.classList.remove('flex');
-
-        container.innerHTML = filtered.map(item => {
-          const status = getItemStatus(item);
-          const isSpotlight = (item.originalIndex === currentSpotlightIndex);
-
-          let cardStyle = "";
-          let badgeHtml = "";
-          let progressBg = "bg-amber-500";
-
-          if (status === 'completed') {
-            cardStyle = "border-l-4 border-l-emerald-500 bg-[#f0fdf4] dark:bg-emerald-950/20 border-slate-200 dark:border-slate-800";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"><i data-lucide="check" class="w-3 h-3"></i> Listo</span>`;
-            progressBg = "bg-emerald-500";
-          } else if (status === 'issues') {
-            cardStyle = "border-l-4 border-l-rose-500 bg-[#fef2f2] dark:bg-rose-950/30 border-slate-200 dark:border-slate-800";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-700"><i data-lucide="alert-octagon" class="w-3 h-3"></i> Exceso +${item.verified - item.expected}</span>`;
-            progressBg = "bg-rose-500";
-          } else {
-            cardStyle = "border-l-4 border-l-amber-500 bg-[#fffbeb] dark:bg-slate-900 border-slate-200 dark:border-slate-800";
-            badgeHtml = `<span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/60">Faltan: ${item.expected - item.verified}</span>`;
-          }
-
-          const percent = item.expected > 0 ? Math.min(100, Math.round((item.verified / item.expected) * 100)) : 100;
-
-          return `
-            <div id="item-card-${item.originalIndex}" class="rounded-2xl p-3.5 sm:p-4 border shadow-sm transition-all duration-300 ${cardStyle} ${isSpotlight ? 'item-spotlight' : ''}">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                
-                <!-- Datos del Artículo con EAN Clicable -->
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center space-x-2 mb-1.5">
-                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono-code">${item.sku}</span>
-                    ${badgeHtml}
-                    ${isSpotlight ? `<span class="text-[10px] font-extrabold bg-sky-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse"><i data-lucide="crosshair" class="w-3 h-3"></i> EN FOCO</span>` : ''}
-                  </div>
-                  
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base leading-snug line-clamp-2">${item.desc}</h4>
-                  
-                  <!-- Chip EAN interactivo con Spotlight al toque -->
-                  <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <button 
-                      type="button"
-                      onclick="spotlightItem(${item.originalIndex}, 'click')"
-                      title="Toca para localizar e iluminar este producto en pantalla"
-                      class="group inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono-code font-bold transition active:scale-95 border ${isSpotlight ? 'bg-sky-600 text-white border-sky-400 shadow-md' : 'bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-300 border-slate-300 dark:border-slate-700 hover:border-sky-500'}"
-                    >
-                      <i data-lucide="barcode" class="w-4 h-4 ${isSpotlight ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-sky-500'}"></i>
-                      <span>${item.ean}</span>
-                      <i data-lucide="sparkles" class="w-3 h-3 opacity-60 group-hover:opacity-100"></i>
-                    </button>
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:inline">(clic EAN para iluminar)</span>
-                  </div>
-                </div>
-
-                <!-- Controles Táctiles Adaptados para Guantes -->
-                <div class="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-slate-800">
-                  
-                  <!-- Contador verificado / esperado -->
-                  <div class="cursor-pointer text-center px-3 py-1.5 bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-700 transition" onclick="openManualQtyModal(${item.originalIndex})" title="Fijar cantidad manual">
-                    <div class="text-base sm:text-lg font-black font-mono-code ${status === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : (status === 'issues' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white')}">
-                      ${item.verified} <span class="text-xs font-normal text-slate-400 dark:text-slate-500">/ ${item.expected}</span>
-                    </div>
-                    <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-tight block">Editar</span>
-                  </div>
-
-                  <!-- Botones Rápidos Táctiles -->
-                  <div class="flex items-center gap-1.5">
-                    <button onclick="modifyCount(${item.originalIndex}, -1)" class="w-11 h-11 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 text-slate-800 dark:text-slate-200 font-black flex items-center justify-center transition border border-slate-300 dark:border-slate-700 shadow-sm">
-                      <i data-lucide="minus" class="w-4 h-4"></i>
-                    </button>
-                    
-                    <button onclick="modifyCount(${item.originalIndex}, 1)" class="w-12 h-11 rounded-xl bg-sky-600 hover:bg-sky-500 active:scale-90 text-white font-black flex items-center justify-center transition shadow-md">
-                      <i data-lucide="plus" class="w-5 h-5"></i>
-                    </button>
-
-                    <button onclick="markFullMatch(${item.originalIndex})" title="Marcar todo cotejado" class="h-11 px-3.5 rounded-xl ${status === 'completed' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400'} active:scale-90 font-bold flex items-center justify-center transition border border-slate-300 dark:border-slate-700 shadow-sm">
-                      <i data-lucide="check" class="w-4 h-4"></i>
-                    </button>
-                  </div>
-
-                </div>
-
-              </div>
-
-              <!-- Mini barra de progreso -->
-              <div class="w-full bg-slate-200 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden mt-3 border border-slate-200 dark:border-slate-800">
-                <div class="${progressBg} h-full transition-all duration-300" style="width: ${percent}%;"></div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      updateKPIs();
-      lucide.createIcons();
-    }
-
-    function modifyCount(originalIndex, delta) {
-      const item = items[originalIndex];
-      if (!item) return;
-
-      const newQty = item.verified + delta;
-      if (newQty < 0) return;
-
-      item.verified = newQty;
-      persistToStorage();
-      if (delta > 0) playBeepSuccess();
-      spotlightItem(originalIndex, 'action');
-      checkAllCompletedCelebration();
-    }
-
-    function markFullMatch(originalIndex) {
-      const item = items[originalIndex];
-      if (!item) return;
-      item.verified = item.expected;
-      persistToStorage();
-      playBeepSuccess();
-      spotlightItem(originalIndex, 'action');
-      checkAllCompletedCelebration();
-    }
-
-    function openManualQtyModal(index) {
-      editingIndex = index;
-      const item = items[index];
-      document.getElementById('modalItemDesc').textContent = item.desc;
-      document.getElementById('modalItemEan').textContent = `SKU: ${item.sku} | EAN: ${item.ean}`;
-      document.getElementById('modalQtyInput').value = item.verified;
-      openModal('manualQtyModal');
-    }
-
-    function adjustModalInput(delta) {
-      const input = document.getElementById('modalQtyInput');
-      let val = parseInt(input.value, 10) || 0;
-      input.value = Math.max(0, val + delta);
-    }
-
-    function saveManualQty() {
-      if (editingIndex !== null && items[editingIndex]) {
-        const inputVal = parseInt(document.getElementById('modalQtyInput').value, 10) || 0;
-        items[editingIndex].verified = Math.max(0, inputVal);
-        persistToStorage();
-        closeModal('manualQtyModal');
-        spotlightItem(editingIndex, 'action');
-        playBeepSuccess();
-        checkAllCompletedCelebration();
-      }
-    }
-
-    function updateKPIs() {
-      let totalExpected = 0;
-      let totalVerified = 0;
-      let completedRefs = 0;
-      let discrepancyCount = 0;
-      let pendingRefs = 0;
-
-      items.forEach(item => {
-        totalExpected += item.expected;
-        totalVerified += item.verified;
-        const status = getItemStatus(item);
-        if (status === 'completed') completedRefs++;
-        if (status === 'issues') discrepancyCount++;
-        if (status === 'pending') pendingRefs++;
-      });
-
-      document.getElementById('count-all').textContent = items.length;
-      document.getElementById('count-pending').textContent = pendingRefs;
-      document.getElementById('count-completed').textContent = completedRefs;
-      document.getElementById('count-issues').textContent = discrepancyCount;
-
-      document.getElementById('kpiRefsSummary').textContent = `${completedRefs} / ${items.length}`;
-      const refPct = items.length > 0 ? Math.round((completedRefs / items.length) * 100) : 0;
-      document.getElementById('kpiRefsPercent').textContent = `${refPct}% listas`;
-
-      document.getElementById('kpiUnitsSummary').textContent = `${totalVerified} / ${totalExpected}`;
-      const remaining = Math.max(0, totalExpected - totalVerified);
-      document.getElementById('kpiRemainingUnits').textContent = `${remaining} faltantes`;
-
-      document.getElementById('kpiCompletedCount').textContent = completedRefs;
-      document.getElementById('kpiDiscrepanciesCount').textContent = discrepancyCount;
-
-      const globalPercent = totalExpected > 0 ? Math.min(100, Math.round((totalVerified / totalExpected) * 100)) : 0;
-      document.getElementById('progressBarText').textContent = `${globalPercent}%`;
-      document.getElementById('progressBarFill').style.width = `${globalPercent}%`;
-    }
-
-    function checkAllCompletedCelebration() {
-      if (items.length === 0) return;
-      const allDone = items.every(i => i.verified === i.expected && i.expected > 0);
-      if (allDone && !celebrationTriggered) {
-        celebrationTriggered = true;
-        playFanfareSuccess();
-        showScanAlert('success', '🎉 ¡PACKING COMPLETADO AL 100%!', 'Todas las unidades cotejadas y listas para precintar.');
-      } else if (!allDone) {
-        celebrationTriggered = false;
-      }
-    }
-
-    let alertTimeout = null;
-    function showScanAlert(type, title, message) {
-      const box = document.getElementById('scanAlertBox');
-      const iconEl = document.getElementById('scanAlertIcon');
-      const titleEl = document.getElementById('scanAlertTitle');
-      const msgEl = document.getElementById('scanAlertMessage');
-
-      clearTimeout(alertTimeout);
-
-      if (type === 'success') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-emerald-50 dark:bg-emerald-950/80 border-emerald-400 dark:border-emerald-500/70 text-emerald-950 dark:text-emerald-100 flex items-center justify-between";
-        iconEl.className = "p-2 rounded-xl bg-emerald-600 text-white";
-        iconEl.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
-      } else if (type === 'error') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-rose-50 dark:bg-rose-950/80 border-rose-400 dark:border-rose-500/70 text-rose-950 dark:text-rose-100 flex items-center justify-between";
-        iconEl.className = "p-2 rounded-xl bg-rose-600 text-white";
-        iconEl.innerHTML = '<i data-lucide="alert-octagon" class="w-5 h-5"></i>';
-      } else if (type === 'warning') {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-amber-50 dark:bg-amber-950/80 border-amber-400 dark:border-amber-500/70 text-amber-950 dark:text-amber-100 flex items-center justify-between";
-        iconEl.className = "p-2 rounded-xl bg-amber-600 text-slate-950";
-        iconEl.innerHTML = '<i data-lucide="alert-triangle" class="w-5 h-5"></i>';
-      } else {
-        box.className = "transition-all duration-200 rounded-2xl p-3.5 shadow-xl border bg-sky-50 dark:bg-sky-950/80 border-sky-400 dark:border-sky-500/70 text-sky-950 dark:text-sky-100 flex items-center justify-between";
-        iconEl.className = "p-2 rounded-xl bg-sky-600 text-white";
-        iconEl.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
-      }
-
-      titleEl.textContent = title;
-      msgEl.textContent = message;
-      box.classList.remove('hidden');
-      lucide.createIcons();
-
-      alertTimeout = setTimeout(() => dismissScanAlert(), 4500);
-    }
-
-    function dismissScanAlert() {
-      document.getElementById('scanAlertBox').classList.add('hidden');
-    }
-
-    function openModal(id) {
-      document.getElementById(id).classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
-
-    function confirmResetList() {
-      if (items.length === 0) return;
-      if (window.confirm("¿Seguro que deseas vaciar el packing list actual?")) {
-        items = [];
-        currentSpotlightIndex = null;
-        clearSpotlight();
-        persistToStorage();
+    // --- Acciones de Cantidad (+1, -1, Check Todo) ---
+    function adjustQty(ean, delta) {
+      const item = items.find(i => i.ean === ean);
+      if (item && (item.scanned + delta >= 0)) {
+        item.scanned += delta;
+        saveState();
         renderList();
-        showScanAlert('info', 'Checklist Vaciado', 'Espacio de trabajo reiniciado.');
       }
     }
 
-    function exportAuditReport() {
+    function checkAll(ean) {
+      const item = items.find(i => i.ean === ean);
+      if (item) {
+        item.scanned = item.expected;
+        playBeep('ok');
+        saveState();
+        renderList();
+      }
+    }
+
+    // --- Renderizado, KPIs y ORDENACIÓN DINÁMICA ---
+    function setFilter(type, el) {
+      currentFilter = type;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const container = document.getElementById('checklistContainer');
+      const search = (document.getElementById('searchInput').value || '').toLowerCase();
+
+      let totalExp = 0;
+      let totalScan = 0;
+      let completedRefs = 0;
+
+      // 1. Filtrado de elementos
+      const filtered = items.filter(item => {
+        totalExp += item.expected;
+        totalScan += item.scanned;
+        if (item.scanned === item.expected && item.expected > 0) completedRefs++;
+
+        const matchesSearch = item.sku.toLowerCase().includes(search) || 
+                              item.ean.toLowerCase().includes(search) || 
+                              item.desc.toLowerCase().includes(search);
+        if (!matchesSearch) return false;
+
+        if (currentFilter === 'pending') return item.scanned < item.expected;
+        if (currentFilter === 'done') return item.scanned === item.expected;
+        if (currentFilter === 'overflow') return item.scanned > item.expected;
+        return true;
+      });
+
+      // 2. ORDENACIÓN DINÁMICA:
+      // - Prioridad 0: Artículos con Exceso o Pendientes (arriba)
+      // - Prioridad 1: Artículos Completados (abajo del todo)
+      filtered.sort((a, b) => {
+        const isADone = (a.scanned === a.expected);
+        const isBDone = (b.scanned === b.expected);
+
+        if (isADone && !isBDone) return 1;  // A baja al fondo
+        if (!isADone && isBDone) return -1; // B baja al fondo
+        
+        // Mantener orden relativo original
+        return (a.orderIndex || 0) - (b.orderIndex || 0);
+      });
+
+      // Actualizar KPIs
+      document.getElementById('kpiDone').textContent = `${completedRefs} / ${items.length}`;
+      document.getElementById('kpiPendingUnits').textContent = Math.max(0, totalExp - totalScan);
+      document.getElementById('kpiScannedUnits').textContent = totalScan;
+
       if (items.length === 0) {
-        showScanAlert('error', 'Lista vacía', 'No hay datos que exportar.');
+        container.innerHTML = `<div class="card" style="text-align: center; color: var(--text-muted); padding: 30px;">Carga un albarán PDF de Odoo o un CSV para comenzar.</div>`;
         return;
       }
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      let csv = "data:text/csv;charset=utf-8,\uFEFF";
-      csv += "EAN;SKU;DESCRIPCION;CANTIDAD_ESPERADA;CANTIDAD_VERIFICADA;DIFERENCIA;ESTADO\n";
 
+      container.innerHTML = '';
+      filtered.forEach(item => {
+        let statusClass = 'pending';
+        let statusColor = 'var(--warning)';
+        let statusText = 'PENDIENTE';
+
+        if (item.scanned === item.expected) {
+          statusClass = 'done';
+          statusColor = 'var(--success)';
+          statusText = 'COMPLETO';
+        } else if (item.scanned > item.expected) {
+          statusClass = 'overflow';
+          statusColor = 'var(--danger)';
+          statusText = 'EXCESO';
+        }
+
+        const isSpotlight = (item.ean === focusedEan);
+
+        const row = document.createElement('div');
+        row.id = 'row-' + item.ean;
+        row.className = `item-row ${statusClass} ${isSpotlight ? 'spotlight' : ''}`;
+        row.innerHTML = `
+          <div class="item-info">
+            <span class="item-sku">${item.sku}</span>
+            <span class="item-desc">${item.desc}</span>
+            <button class="ean-btn" onclick="triggerSpotlight('${item.ean}')" title="Toca para localizar en pantalla">
+              🔍 EAN: ${item.ean}
+            </button>
+          </div>
+          <div class="qty-display">
+            <div class="qty-numbers">${item.scanned} / ${item.expected}</div>
+            <div class="qty-status" style="color: ${statusColor};">${statusText}</div>
+          </div>
+          <div class="touch-controls">
+            <button class="btn-touch" onclick="adjustQty('${item.ean}', -1)">-</button>
+            <button class="btn-touch" onclick="adjustQty('${item.ean}', 1)">+</button>
+            <button class="btn-touch btn-check-all" onclick="checkAll('${item.ean}')" title="Marcar todo">✓</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showFeedback(text, isOk) {
+      const fb = document.getElementById('feedback');
+      fb.style.display = 'block';
+      fb.style.background = isOk ? 'var(--success-bg)' : 'var(--danger-bg)';
+      fb.style.color = isOk ? 'var(--success)' : 'var(--danger)';
+      fb.style.border = `1px solid ${isOk ? 'var(--success)' : 'var(--danger)'}`;
+      fb.textContent = text;
+    }
+
+    // --- Persistencia en LocalStorage ---
+    function saveState() {
+      localStorage.setItem('packcheck_items', JSON.stringify(items));
+    }
+    function loadSavedState() {
+      const data = localStorage.getItem('packcheck_items');
+      if (data) {
+        try {
+          items = JSON.parse(data);
+          renderList();
+        } catch (e) {}
+      }
+    }
+    loadSavedState();
+
+    // --- Exportar Reporte de Salida en CSV ---
+    function exportReport() {
+      if (items.length === 0) return alert('No hay datos para exportar.');
+      let csv = 'EAN;SKU;Descripcion;Esperado;Verificado;Diferencia;Estado\n';
       items.forEach(i => {
-        const diff = i.verified - i.expected;
-        let estado = "CORRECTO";
-        if (diff > 0) estado = `SOBRANTE (+${diff})`;
-        if (diff < 0) estado = `FALTANTE (${diff})`;
-        const desc = `"${i.desc.replace(/"/g, '""')}"`;
-        csv += `${i.ean};${i.sku};${desc};${i.expected};${i.verified};${diff};${estado}\n`;
+        const diff = i.scanned - i.expected;
+        const estado = diff === 0 ? 'OK' : (diff > 0 ? 'SOBRANTE' : 'FALTANTE');
+        csv += `${i.ean};${i.sku};"${i.desc}";${i.expected};${i.scanned};${diff};${estado}\n`;
       });
 
-      const uri = encodeURI(csv);
-      const link = document.createElement("a");
-      link.setAttribute("href", uri);
-      link.setAttribute("download", `auditoria_packing_${timestamp}.csv`);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Packing_Report_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      showScanAlert('success', 'Reporte Descargado', 'CSV de auditoría generado correctamente.');
     }
-
-    // Inicialización al cargar el DOM
-    window.addEventListener('DOMContentLoaded', () => {
-      initTheme();
-      loadFromStorage();
-      renderList();
-      lucide.createIcons();
-    });
   </script>
 </body>
 </html>
