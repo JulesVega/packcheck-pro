@@ -11,8 +11,6 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
   <!-- Generador de Códigos QR para traspaso PC -> PDA -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- EmailJS SDK para envío de correo silencioso sin backend -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
   <style>
     :root {
@@ -452,7 +450,7 @@
 
       <div style="display: flex; gap: 8px; justify-content: center;">
         <button class="btn" onclick="exportReport()">📥 Descargar Reporte CSV</button>
-        <button class="btn btn-secondary" onclick="closeModal('orderCompleteModal')">Cerrar Ventana</button>
+        <button class="btn btn-secondary" onclick="closeAndSendEmail()">Cerrar Ventana</button>
       </div>
     </div>
   </div>
@@ -461,18 +459,10 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     // ==========================================
-    // CONFIGURACIÓN EMAILJS (ENVÍO SILENCIOSO)
+    // PASARELA DE ENVÍO DIRECTO (GOOGLE APPS SCRIPT)
     // ==========================================
-    const EMAILJS_PUBLIC_KEY  = 'TU_PUBLIC_KEY';   // Sustituir por tu Public Key de EmailJS
-    const EMAILJS_SERVICE_ID  = 'TU_SERVICE_ID';   // Sustituir por tu Service ID de EmailJS
-    const EMAILJS_TEMPLATE_ID = 'TU_TEMPLATE_ID';  // Sustituir por tu Template ID de EmailJS
-    const DESTINATARIO_EMAIL  = 'jlmoralejo@visiotechsecurity.com';
-
-    (function() {
-      if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'TU_PUBLIC_KEY') {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-      }
-    })();
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXFrKdyI2FV_UBvu6o_Sl3vXEeoRVr5wy0Xfllv88p9eHopsoSzJ5pxFB3UqOiZhyfdw/exec';
+    const DESTINATARIO_EMAIL = 'jlmoralejo@visiotechsecurity.com';
 
     let items = [];
     let tempParsedItems = [];
@@ -816,22 +806,12 @@
       }
     }
 
-    // --- ENVÍO 100% AUTOMÁTICO Y SILENCIOSO DEL CORREO ---
+    // --- ENVÍO 100% AUTOMÁTICO EN SEGUNDO PLANO A GMAIL ---
     async function sendSilentCompletionEmail() {
       const statusLabel = document.getElementById('emailStatusText');
-      
-      if (typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'TU_PUBLIC_KEY') {
-        console.warn('EmailJS no está configurado aún con las claves reales.');
-        if (statusLabel) {
-          statusLabel.style.color = 'var(--warning)';
-          statusLabel.textContent = 'ℹ️ Aviso: Configura las claves de EmailJS para activar el envío en segundo plano.';
-        }
-        return;
-      }
-
       if (statusLabel) {
         statusLabel.style.color = 'var(--primary)';
-        statusLabel.textContent = `📧 Enviando confirmación silenciosa a ${DESTINATARIO_EMAIL}...`;
+        statusLabel.textContent = `📧 Enviando notificación automática a ${DESTINATARIO_EMAIL}...`;
       }
 
       const totalUnits = items.reduce((acc, i) => acc + i.scanned, 0);
@@ -839,7 +819,7 @@
       const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
 
       let bodyLines = [
-        `Confirmación de preparación y packing completado al 100%:`,
+        `Confirmación de packing completado al 100%:`,
         `--------------------------------------------------`,
         `Documento / Albarán: ${currentOrderName}`,
         `Fecha y Hora: ${dateStr}`,
@@ -857,14 +837,19 @@
       bodyLines.push(`--------------------------------------------------`);
       bodyLines.push(`Generado automáticamente con PackCheck Pro (A MORALEJO BRAND)`);
 
-      const templateParams = {
-        to_email: DESTINATARIO_EMAIL,
+      const payload = {
         subject: `[PACKING COMPLETADO] ${currentOrderName} - 100% Verificado`,
         message: bodyLines.join('\n')
       };
 
       try {
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
         if (statusLabel) {
           statusLabel.style.color = 'var(--success)';
           statusLabel.textContent = `✓ Notificación enviada con éxito a ${DESTINATARIO_EMAIL}`;
@@ -874,9 +859,15 @@
         console.error('Error enviando email:', err);
         if (statusLabel) {
           statusLabel.style.color = 'var(--danger)';
-          statusLabel.textContent = '❌ Error al enviar el correo automático: ' + (err.text || err.message || 'Error de conexión');
+          statusLabel.textContent = '❌ Error al despachar el correo automático';
         }
       }
+    }
+
+    // Cerrar la ventana y forzar envío
+    function closeAndSendEmail() {
+      closeModal('orderCompleteModal');
+      sendSilentCompletionEmail();
     }
 
     // --- Comprobación de Pedido Finalizado al 100% ---
@@ -897,7 +888,7 @@
         document.getElementById('compUnits').textContent = totalUnits;
         document.getElementById('compTime').textContent = timeStr;
 
-        // Disparo automático silencioso sin interacción
+        // Disparo automático silencioso sin tocar nada
         sendSilentCompletionEmail();
 
         setTimeout(() => {
