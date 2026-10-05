@@ -391,6 +391,20 @@
     let html5QrCode = null;
     let cameraActive = false;
 
+    // --- Validador matemático de Checksum EAN-13 / EAN-8 ---
+    function isValidBarcode(barcode) {
+      if (!/^\d{8}$|^\d{12,14}$/.test(barcode)) return false;
+      if (barcode.length === 13) {
+        let sum = 0;
+        for (let i = 0; i < 12; i++) {
+          sum += parseInt(barcode[i], 10) * (i % 2 === 0 ? 1 : 3);
+        }
+        let checksum = (10 - (sum % 10)) % 10;
+        return checksum === parseInt(barcode[12], 10);
+      }
+      return true;
+    }
+
     // --- Motor de Audio (Web Audio API) ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(type) {
@@ -466,7 +480,7 @@
       this.value = '';
     });
 
-    // --- Parser de PDF adaptado a Visiotech / Odoo con CONSOLIDACIÓN ---
+    // --- Parser de PDF con filtro Serial, Checksum EAN y Consolidación ---
     async function parsePDF(file) {
       showFeedback('Extrayendo y consolidando artículos del PDF...', true);
       try {
@@ -478,7 +492,6 @@
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           
-          // Agrupar elementos por posición vertical Y
           const itemsByY = {};
           textContent.items.forEach(item => {
             const y = Math.round(item.transform[5]);
@@ -490,7 +503,6 @@
             itemsByY[foundY].push(item);
           });
 
-          // Ordenar de arriba a abajo y de izquierda a derecha
           const sortedYs = Object.keys(itemsByY).sort((a, b) => b - a);
           sortedYs.forEach(y => {
             const rowItems = itemsByY[y].sort((a, b) => a.transform[4] - b.transform[4]);
@@ -507,14 +519,32 @@
 
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
-      const eanRegex = /\b(\d{13}|\d{12}|\d{8})\b/;
+      const eanRegex = /\b(\d{13}|\d{12}|\d{8})\b/g;
+      let inSerialBlock = false;
 
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
+        if (!line) continue;
 
-        // Omitir cabeceras, pies de página o bloques de números de serie
+        // Comprobación de inicio o continuidad de bloques de números de serie
+        if (line.startsWith('Serial')) {
+          inSerialBlock = true;
+          continue;
+        }
+
+        if (inSerialBlock) {
+          const isSerialLine = line.includes(',') || /^[0-9a-zA-Z]{8,25}/.test(line);
+          const hasPricePattern = line.includes('€') || line.includes('%');
+          
+          if (isSerialLine && !hasPricePattern) {
+            continue;
+          } else {
+            inSerialBlock = false;
+          }
+        }
+
+        // Omitir encabezados y textos institucionales
         if (
-          line.startsWith('Serial') || 
           line.includes('VISIOTECH') || 
           line.includes('Cliente:') || 
           line.includes('Albarán') || 
@@ -529,15 +559,21 @@
           continue;
         }
 
-        const eanMatch = line.match(eanRegex);
-        if (eanMatch) {
-          const ean = eanMatch[1];
-          const parts = line.split(ean);
+        let match;
+        while ((match = eanRegex.exec(line)) !== null) {
+          const candidateEan = match[1];
+
+          // Validar checksum oficial EAN
+          if (!isValidBarcode(candidateEan)) {
+            continue;
+          }
+
+          const parts = line.split(candidateEan);
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          // 1. Extraer SKU (última palabra previa al EAN)
-          let sku = 'SKU-' + ean.slice(-4);
+          // 1. Extraer SKU
+          let sku = 'SKU-' + candidateEan.slice(-4);
           let descPrefix = '';
           if (beforeEan.length > 0) {
             const beforeWords = beforeEan.split(/\s+/);
@@ -545,7 +581,7 @@
             descPrefix = beforeWords.slice(0, -1).join(' ');
           }
 
-          // 2. Limpiar residuos de precios, descuentos y símbolos
+          // 2. Limpiar residuos monetarios
           let cleanAfter = afterEan
             .replace(/\b\d+([.,]\d+)?\s*%/g, '')
             .replace(/\b\d+([.,]\d+)?\s*€/g, '')
@@ -569,13 +605,13 @@
           desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
-          // 4. CONSOLIDACIÓN DE LÍNEAS DUPLICADAS:
-          const existingItem = tempParsedItems.find(item => item.ean === ean);
+          // 4. Consolidación de duplicados por EAN
+          const existingItem = tempParsedItems.find(item => item.ean === candidateEan);
           if (existingItem) {
             existingItem.expected += qty;
           } else {
             tempParsedItems.push({
-              ean: ean,
+              ean: candidateEan,
               sku: sku,
               desc: desc,
               expected: qty,
@@ -583,6 +619,7 @@
               orderIndex: tempParsedItems.length
             });
           }
+          break;
         }
       }
 
@@ -676,7 +713,7 @@
       }
     });
 
-    // --- Gestor Universal de Códigos Leídos (EAN vs QR de Orden) ---
+    // --- Gestor Universal de Códigos (EAN vs QR de Orden) ---
     function handleBarcodeScanned(code) {
       if (code.startsWith('PK1:')) {
         loadOrderFromQR(code);
@@ -702,7 +739,7 @@
       }
     }
 
-    // --- Protocolo QR de Picking (Traspaso Orden PC -> PDA) ---
+    // --- Protocolo QR de Picking (Traspaso PC -> PDA) ---
     function generateOrderQR() {
       if (items.length === 0) return alert('Primero carga un albarán para generar el QR.');
 
@@ -794,7 +831,6 @@
         notice.style.display = 'flex';
       }
 
-      // Auto-centrado suave en la vista
       setTimeout(() => {
         const el = document.getElementById('row-' + ean);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -843,7 +879,6 @@
       let totalScan = 0;
       let completedRefs = 0;
 
-      // 1. Filtrado de elementos
       const filtered = items.filter(item => {
         totalExp += item.expected;
         totalScan += item.scanned;
@@ -860,21 +895,18 @@
         return true;
       });
 
-      // 2. ORDENACIÓN DINÁMICA:
-      // - Prioridad 0: Artículos con Exceso o Pendientes (arriba)
-      // - Prioridad 1: Artículos Completados (abajo del todo)
+      // ORDENACIÓN: Referencias completas abajo del todo
       filtered.sort((a, b) => {
         const isADone = (a.scanned === a.expected);
         const isBDone = (b.scanned === b.expected);
 
-        if (isADone && !isBDone) return 1;  // A baja al fondo
-        if (!isADone && isBDone) return -1; // B baja al fondo
+        if (isADone && !isBDone) return 1;
+        if (!isADone && isBDone) return -1;
         
-        // Mantener orden relativo original
         return (a.orderIndex || 0) - (b.orderIndex || 0);
       });
 
-      // Actualizar KPIs
+      // KPIs
       document.getElementById('kpiDone').textContent = `${completedRefs} / ${items.length}`;
       document.getElementById('kpiPendingUnits').textContent = Math.max(0, totalExp - totalScan);
       document.getElementById('kpiScannedUnits').textContent = totalScan;
