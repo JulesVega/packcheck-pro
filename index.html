@@ -230,7 +230,7 @@
     .qty-numbers { font-size: 1.3rem; font-weight: 900; }
     .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
 
-    /* Controles táctiles grandes */
+    /* Controles táctiles grandes para operarios con guantes */
     .touch-controls { display: flex; gap: 4px; }
     .btn-touch {
       width: 44px;
@@ -391,20 +391,6 @@
     let html5QrCode = null;
     let cameraActive = false;
 
-    // --- Validador matemático de Checksum EAN-13 / EAN-8 ---
-    function isValidBarcode(barcode) {
-      if (!/^\d{8}$|^\d{12,14}$/.test(barcode)) return false;
-      if (barcode.length === 13) {
-        let sum = 0;
-        for (let i = 0; i < 12; i++) {
-          sum += parseInt(barcode[i], 10) * (i % 2 === 0 ? 1 : 3);
-        }
-        let checksum = (10 - (sum % 10)) % 10;
-        return checksum === parseInt(barcode[12], 10);
-      }
-      return true;
-    }
-
     // --- Motor de Audio (Web Audio API) ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(type) {
@@ -480,7 +466,7 @@
       this.value = '';
     });
 
-    // --- Parser de PDF con filtro Serial, Checksum EAN y Consolidación ---
+    // --- Parser de PDF adaptado a Visiotech / Odoo ---
     async function parsePDF(file) {
       showFeedback('Extrayendo y consolidando artículos del PDF...', true);
       try {
@@ -519,32 +505,15 @@
 
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
-      const eanRegex = /\b(\d{13}|\d{12}|\d{8})\b/g;
-      let inSerialBlock = false;
+      const eanRegex = /\b(\d{8}|\d{12,14})\b/;
 
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         if (!line) continue;
 
-        // Comprobación de inicio o continuidad de bloques de números de serie
-        if (line.startsWith('Serial')) {
-          inSerialBlock = true;
-          continue;
-        }
-
-        if (inSerialBlock) {
-          const isSerialLine = line.includes(',') || /^[0-9a-zA-Z]{8,25}/.test(line);
-          const hasPricePattern = line.includes('€') || line.includes('%');
-          
-          if (isSerialLine && !hasPricePattern) {
-            continue;
-          } else {
-            inSerialBlock = false;
-          }
-        }
-
-        // Omitir encabezados y textos institucionales
+        // 1. Omitir cabeceras, pies de página o textos estáticos del albarán
         if (
+          line.startsWith('Serial') ||
           line.includes('VISIOTECH') || 
           line.includes('Cliente:') || 
           line.includes('Albarán') || 
@@ -554,25 +523,32 @@
           line.includes('Questo documento') ||
           line.includes('Fecha de impresión') ||
           line.startsWith('Impuestos') ||
-          line.startsWith('No Pack')
+          line.startsWith('No Pack') ||
+          line.startsWith('PRECIO BASE')
         ) {
           continue;
         }
 
-        let match;
-        while ((match = eanRegex.exec(line)) !== null) {
-          const candidateEan = match[1];
+        // 2. REGLA: Toda fila de artículo en Visiotech contiene importes/porcentajes
+        // Las líneas con números de serie no tienen importes ni porcentajes
+        const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
+        if (!hasPriceOrDiscount) {
+          continue;
+        }
 
-          // Validar checksum oficial EAN
-          if (!isValidBarcode(candidateEan)) {
-            continue;
-          }
+        // 3. Buscar si contiene un código de barras EAN
+        const eanMatch = line.match(eanRegex);
+        if (eanMatch) {
+          const candidateEan = eanMatch[1];
+
+          // Filtrar fechas numéricas o teléfonos de cabecera
+          if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
 
           const parts = line.split(candidateEan);
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          // 1. Extraer SKU
+          // A) Extraer SKU (última palabra previa al EAN)
           let sku = 'SKU-' + candidateEan.slice(-4);
           let descPrefix = '';
           if (beforeEan.length > 0) {
@@ -581,22 +557,26 @@
             descPrefix = beforeWords.slice(0, -1).join(' ');
           }
 
-          // 2. Limpiar residuos monetarios
+          // B) Limpiar importes, porcentajes y símbolos
           let cleanAfter = afterEan
-            .replace(/\b\d+([.,]\d+)?\s*%/g, '')
-            .replace(/\b\d+([.,]\d+)?\s*€/g, '')
-            .replace(/,\s*€/g, '')
-            .replace(/%\s*,/g, '')
+            .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
+            .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
+            .replace(/,\s*€/g, ' ')
+            .replace(/%\s*,/g, ' ')
+            .replace(/0,00/g, ' ')
+            .replace(/0\.0/g, ' ')
             .trim();
 
-          // 3. Extraer Cantidad esperada
+          // C) Extraer la Cantidad esperada (último número entero)
           const numbers = cleanAfter.match(/\b\d+\b/g);
           let qty = 1;
           let desc = cleanAfter;
 
           if (numbers && numbers.length > 0) {
-            qty = parseInt(numbers[numbers.length - 1], 10) || 1;
-            const lastNumIdx = desc.lastIndexOf(numbers[numbers.length - 1]);
+            const lastNum = numbers[numbers.length - 1];
+            qty = parseInt(lastNum, 10) || 1;
+            
+            const lastNumIdx = desc.lastIndexOf(lastNum);
             if (lastNumIdx !== -1) {
               desc = desc.substring(0, lastNumIdx).trim();
             }
@@ -605,7 +585,7 @@
           desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
-          // 4. Consolidación de duplicados por EAN
+          // D) CONSOLIDACIÓN DE DUPLICADOS: Si el EAN ya existe, suma las unidades
           const existingItem = tempParsedItems.find(item => item.ean === candidateEan);
           if (existingItem) {
             existingItem.expected += qty;
@@ -619,12 +599,11 @@
               orderIndex: tempParsedItems.length
             });
           }
-          break;
         }
       }
 
       if (tempParsedItems.length === 0) {
-        showFeedback('❌ No se encontraron artículos válidos con EAN en el PDF.', false);
+        showFeedback('❌ No se encontraron artículos válidos en el PDF.', false);
         return;
       }
 
@@ -895,7 +874,7 @@
         return true;
       });
 
-      // ORDENACIÓN: Referencias completas abajo del todo
+      // ORDENACIÓN: Referencias completas bajan al fondo
       filtered.sort((a, b) => {
         const isADone = (a.scanned === a.expected);
         const isBDone = (b.scanned === b.expected);
@@ -906,7 +885,7 @@
         return (a.orderIndex || 0) - (b.orderIndex || 0);
       });
 
-      // KPIs
+      // Actualizar KPIs
       document.getElementById('kpiDone').textContent = `${completedRefs} / ${items.length}`;
       document.getElementById('kpiPendingUnits').textContent = Math.max(0, totalExp - totalScan);
       document.getElementById('kpiScannedUnits').textContent = totalScan;
