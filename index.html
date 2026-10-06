@@ -194,7 +194,7 @@
     .item-row.done { border-left-color: var(--success); background: var(--success-bg); opacity: 0.82; }
     .item-row.overflow { border-left-color: var(--danger); background: var(--danger-bg); }
 
-    /* Destello temporal que se apaga suavemente */
+    /* Destello temporal */
     @keyframes scanFlash {
       0% {
         box-shadow: 0 0 0 5px var(--spotlight-border), 0 0 22px var(--spotlight-border);
@@ -219,7 +219,7 @@
     .item-sku { font-size: 0.72rem; font-weight: 800; font-family: monospace; color: var(--brand-gold); }
     .item-desc { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
 
-    /* Botón interactivo de EAN */
+    /* Botón interactivo de EAN / Código */
     .ean-btn {
       display: inline-flex;
       align-items: center;
@@ -404,7 +404,7 @@
     <div class="modal-card">
       <h3>Artículos Detectados en el Albarán</h3>
       <p style="font-size: 0.85rem; color: var(--text-muted);">
-        Las líneas con el mismo EAN se han consolidado sumando sus unidades totales:
+        Las líneas con el mismo EAN o Referencia se han consolidado sumando sus unidades totales:
       </p>
       <div id="previewTableContainer"></div>
       <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
@@ -539,7 +539,7 @@
       const btn = document.getElementById('themeToggleBtn');
       if (btn) {
         if (theme === 'dark') {
-          btn.innerHTML = '☀️ Modo Claro';
+          btn.innerHTML = '☀️️ Modo Claro';
           btn.title = 'Cambiar a Modo Claro';
         } else {
           btn.innerHTML = '🌙 Modo Oscuro';
@@ -609,6 +609,7 @@
         let line = lines[i].trim();
         if (!line) continue;
 
+        // 1. Omitir cabeceras, pies de página o textos estáticos del albarán
         if (
           line.startsWith('Serial') ||
           line.includes('VISIOTECH') || 
@@ -626,21 +627,29 @@
           continue;
         }
 
+        // 2. Comprobar si es una fila de artículo (contiene importes o porcentajes)[cite: 10]
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
         if (!hasPriceOrDiscount) {
           continue;
         }
 
+        // 3. Extracción de datos
         const eanMatch = line.match(eanRegex);
+        let candidateEan = '';
+        let sku = '';
+        let desc = '';
+        let qty = 1;
+
         if (eanMatch) {
-          const candidateEan = eanMatch[1];
+          // --- CASO A: Artículo con código de barras EAN normal ---
+          candidateEan = eanMatch[1];
           if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
 
           const parts = line.split(candidateEan);
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          let sku = 'SKU-' + candidateEan.slice(-4);
+          sku = 'SKU-' + candidateEan.slice(-4);
           let descPrefix = '';
           if (beforeEan.length > 0) {
             const beforeWords = beforeEan.split(/\s+/);
@@ -658,8 +667,7 @@
             .trim();
 
           const numbers = cleanAfter.match(/\b\d+\b/g);
-          let qty = 1;
-          let desc = cleanAfter;
+          desc = cleanAfter;
 
           if (numbers && numbers.length > 0) {
             const lastNum = numbers[numbers.length - 1];
@@ -673,19 +681,47 @@
           desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
-          const existingItem = tempParsedItems.find(item => item.ean === candidateEan);
-          if (existingItem) {
-            existingItem.expected += qty;
-          } else {
-            tempParsedItems.push({
-              ean: candidateEan,
-              sku: sku,
-              desc: desc,
-              expected: qty,
-              scanned: 0,
-              orderIndex: tempParsedItems.length
-            });
+        } else {
+          // --- CASO B: Artículo SIN EAN (ej. RG-BACKPACK, material publicitario) ---[cite: 10]
+          let cleanLine = line
+            .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
+            .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
+            .replace(/,\s*€/g, ' ')
+            .replace(/%\s*,/g, ' ')
+            .replace(/0,00/g, ' ')
+            .replace(/0\.0/g, ' ')
+            .trim();
+
+          const words = cleanLine.split(/\s+/);
+          sku = words[0]; // La primera palabra es la referencia[cite: 10]
+          candidateEan = sku; // Se usa la propia referencia para pistolear o validar[cite: 10]
+
+          const numbers = cleanLine.match(/\b\d+\b/g);
+          if (numbers && numbers.length > 0) {
+            const lastNum = numbers[numbers.length - 1];
+            qty = parseInt(lastNum, 10) || 1;
+            const lastNumIdx = cleanLine.lastIndexOf(lastNum);
+            if (lastNumIdx !== -1) {
+              cleanLine = cleanLine.substring(0, lastNumIdx).trim();
+            }
           }
+
+          desc = cleanLine.substring(sku.length).trim() || sku;
+        }
+
+        // 4. Consolidación de duplicados (por EAN o por Referencia)[cite: 10]
+        const existingItem = tempParsedItems.find(item => item.ean === candidateEan || item.sku === sku);
+        if (existingItem) {
+          existingItem.expected += qty;
+        } else {
+          tempParsedItems.push({
+            ean: candidateEan,
+            sku: sku,
+            desc: desc,
+            expected: qty,
+            scanned: 0,
+            orderIndex: tempParsedItems.length
+          });
         }
       }
 
@@ -700,7 +736,7 @@
     function showPreviewModal() {
       const container = document.getElementById('previewTableContainer');
       let totalUds = 0;
-      let html = `<table><tr><th>SKU</th><th>EAN</th><th>Descripción</th><th style="text-align:right;">Uds</th></tr>`;
+      let html = `<table><tr><th>SKU</th><th>EAN / Ref</th><th>Descripción</th><th style="text-align:right;">Uds</th></tr>`;
       tempParsedItems.forEach(i => {
         totalUds += i.expected;
         html += `<tr><td><strong>${i.sku}</strong></td><td>${i.ean}</td><td>${i.desc}</td><td style="text-align:right; font-weight:bold;">${i.expected}</td></tr>`;
@@ -741,7 +777,7 @@
             const desc = row[2].trim();
             const qty = parseInt(row[3].trim(), 10) || 0;
 
-            const existing = tempParsedItems.find(it => it.ean === ean);
+            const existing = tempParsedItems.find(it => it.ean === ean || it.sku === sku);
             if (existing) {
               existing.expected += qty;
             } else {
@@ -772,7 +808,7 @@
       lastKeyTime = now;
 
       if (e.key === 'Enter') {
-        if (barcodeBuffer.length > 2) handleBarcodeScanned(barcodeBuffer.trim());
+        if (barcodeBuffer.length > 1) handleBarcodeScanned(barcodeBuffer.trim());
         barcodeBuffer = '';
       } else if (e.key.length === 1) {
         barcodeBuffer += e.key;
@@ -787,9 +823,10 @@
       processProductScan(code);
     }
 
-    function processProductScan(ean) {
-      const cleanEan = ean.trim();
-      const item = items.find(i => i.ean === cleanEan);
+    function processProductScan(code) {
+      const cleanCode = code.trim();
+      // Búsqueda por coincidencia en EAN o por Referencia (SKU)[cite: 10]
+      const item = items.find(i => i.ean === cleanCode || i.sku.toLowerCase() === cleanCode.toLowerCase());
 
       if (item) {
         item.scanned += 1;
@@ -798,11 +835,11 @@
         
         saveState();
         renderList();
-        applySpotlight(cleanEan);
+        applySpotlight(item.ean);
         checkOrderCompletion();
       } else {
         playBeep('error');
-        showFeedback(`❌ EAN NO ENCONTRADO en el albarán: ${cleanEan}`, false);
+        showFeedback(`❌ Código NO ENCONTRADO en el albarán: ${cleanCode}`, false);
       }
     }
 
@@ -864,7 +901,6 @@
       }
     }
 
-    // Cerrar la ventana y forzar envío
     function closeAndSendEmail() {
       closeModal('orderCompleteModal');
       sendSilentCompletionEmail();
@@ -888,7 +924,7 @@
         document.getElementById('compUnits').textContent = totalUnits;
         document.getElementById('compTime').textContent = timeStr;
 
-        // Disparo automático silencioso sin tocar nada
+        // Disparo automático silencioso sin interacción
         sendSilentCompletionEmail();
 
         setTimeout(() => {
@@ -1137,7 +1173,7 @@
             <span class="item-sku">${item.sku}</span>
             <span class="item-desc">${item.desc}</span>
             <button class="ean-btn" onclick="triggerSpotlight('${item.ean}')" title="Toca para localizar en pantalla">
-              🔍 EAN: ${item.ean}
+              🔍 ${item.ean === item.sku ? 'REF' : 'EAN'}: ${item.ean}
             </button>
           </div>
           <div class="qty-display">
