@@ -194,7 +194,7 @@
     .item-row.done { border-left-color: var(--success); background: var(--success-bg); opacity: 0.82; }
     .item-row.overflow { border-left-color: var(--danger); background: var(--danger-bg); }
 
-    /* Destello temporal */
+    /* Destello temporal que se apaga suavemente */
     @keyframes scanFlash {
       0% {
         box-shadow: 0 0 0 5px var(--spotlight-border), 0 0 22px var(--spotlight-border);
@@ -539,7 +539,7 @@
       const btn = document.getElementById('themeToggleBtn');
       if (btn) {
         if (theme === 'dark') {
-          btn.innerHTML = '☀️️ Modo Claro';
+          btn.innerHTML = '☀️ Modo Claro';
           btn.title = 'Cambiar a Modo Claro';
         } else {
           btn.innerHTML = '🌙 Modo Oscuro';
@@ -627,9 +627,15 @@
           continue;
         }
 
-        // 2. Comprobar si es una fila de artículo (contiene importes o porcentajes)[cite: 10]
+        // 2. Comprobar si contiene precios o importes (condición de fila de tabla)
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
         if (!hasPriceOrDiscount) {
+          continue;
+        }
+
+        // Filtro de seguridad: si la línea contiene múltiples comas de series (ej: "31ca05a3191, 31ca01e1191..."), es un bloque Serial fusionado
+        const commaCount = (line.match(/,/g) || []).length;
+        if (commaCount > 3) {
           continue;
         }
 
@@ -641,7 +647,7 @@
         let qty = 1;
 
         if (eanMatch) {
-          // --- CASO A: Artículo con código de barras EAN normal ---
+          // --- CASO A: Artículo con código de barras EAN numérico ---
           candidateEan = eanMatch[1];
           if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
 
@@ -682,7 +688,7 @@
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
         } else {
-          // --- CASO B: Artículo SIN EAN (ej. RG-BACKPACK, material publicitario) ---[cite: 10]
+          // --- CASO B: Artículo SIN EAN (ej. RG-BACKPACK) ---
           let cleanLine = line
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -692,9 +698,20 @@
             .replace(/0\.0/g, ' ')
             .trim();
 
-          const words = cleanLine.split(/\s+/);
-          sku = words[0]; // La primera palabra es la referencia[cite: 10]
-          candidateEan = sku; // Se usa la propia referencia para pistolear o validar[cite: 10]
+          const words = cleanLine.split(/\s+/).filter(Boolean);
+          if (words.length === 0) continue;
+
+          let rawSku = words[0].replace(/,/g, '').trim();
+
+          // FILTRO ESTRICTO CONTRA FRAGMENTOS DE NÚMEROS DE SERIE:
+          // Un SKU real no debe ser un código hexadecimal de serie (ej: 31ca05a3191) ni empezar por patrones de series
+          const looksLikeSerial = /^[0-9a-fA-F]{8,}$/.test(rawSku) || /^(31ca|319e|318e|315c|31cc|0043|003e)/i.test(rawSku);
+          if (looksLikeSerial || rawSku.length < 3) {
+            continue; // Se descarta: es basura de un número de serie
+          }
+
+          sku = rawSku;
+          candidateEan = sku; // Se usa el propio SKU como identificador para pistolear
 
           const numbers = cleanLine.match(/\b\d+\b/g);
           if (numbers && numbers.length > 0) {
@@ -709,7 +726,10 @@
           desc = cleanLine.substring(sku.length).trim() || sku;
         }
 
-        // 4. Consolidación de duplicados (por EAN o por Referencia)[cite: 10]
+        // Validación final: SKU no puede estar vacío ni contener solo símbolos
+        if (!sku || sku === 'SKU-' || sku.trim().length < 2) continue;
+
+        // 4. Consolidación de duplicados
         const existingItem = tempParsedItems.find(item => item.ean === candidateEan || item.sku === sku);
         if (existingItem) {
           existingItem.expected += qty;
@@ -825,7 +845,6 @@
 
     function processProductScan(code) {
       const cleanCode = code.trim();
-      // Búsqueda por coincidencia en EAN o por Referencia (SKU)[cite: 10]
       const item = items.find(i => i.ean === cleanCode || i.sku.toLowerCase() === cleanCode.toLowerCase());
 
       if (item) {
@@ -924,7 +943,6 @@
         document.getElementById('compUnits').textContent = totalUnits;
         document.getElementById('compTime').textContent = timeStr;
 
-        // Disparo automático silencioso sin interacción
         sendSilentCompletionEmail();
 
         setTimeout(() => {
