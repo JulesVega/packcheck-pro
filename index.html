@@ -430,6 +430,9 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    // ==========================================
+    // PASARELA DE ENVÍO DIRECTO (GOOGLE APPS SCRIPT)
+    // ==========================================
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXFrKdyI2FV_UBvu6o_Sl3vXEeoRVr5wy0Xfllv88p9eHopsoSzJ5pxFB3UqOiZhyfdw/exec';
     const DESTINATARIO_EMAIL = 'jlmoralejo@visiotechsecurity.com';
 
@@ -542,7 +545,6 @@
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           
-          // Agrupación de cajas por altura Y con tolerancia de 5px para evitar líneas partidas horizontalmente
           const itemsByY = {};
           textContent.items.forEach(item => {
             const y = Math.round(item.transform[5]);
@@ -569,7 +571,7 @@
     }
 
     // ============================================================
-    // MOTOR DE EXTRACCIÓN Y RECONSTRUCCIÓN DE LÍNEAS DE ARTÍCULOS
+    // PARSER POR DETECCIÓN DE EAN DIRECTO + RECONSTRUCCIÓN MULTILÍNEA
     // ============================================================
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
@@ -579,7 +581,7 @@
         let line = lines[i].trim();
         if (!line) continue;
 
-        // 1. Descartar textos estáticos
+        // 1. Descartar cabeceras y pies de página
         if (
           line.startsWith('Serial') ||
           line.includes('VISIOTECH') || 
@@ -597,17 +599,9 @@
           continue;
         }
 
-        // 2. Verificar que sea una fila con importes/descuentos
-        const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
-        if (!hasPriceOrDiscount) {
-          continue;
-        }
-
-        // 3. Descartar bloques seriales fusionados
+        // 2. Descartar líneas que sean bloques masivos de números de serie
         const commaCount = (line.match(/,/g) || []).length;
-        if (commaCount > 3) {
-          continue;
-        }
+        if (commaCount > 3) continue;
 
         const eanMatch = line.match(eanRegex);
         let candidateEan = '';
@@ -617,7 +611,7 @@
 
         if (eanMatch) {
           // ==========================================
-          // CASO A: Artículo con código EAN numérico
+          // CASO A: Artículo con EAN identificado
           // ==========================================
           candidateEan = eanMatch[1];
           if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
@@ -626,21 +620,16 @@
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          // Reconstruir SKU rastreando las líneas inmediatamente anteriores si viene partido
+          // Reconstruir SKU mirando las 2 líneas anteriores si viene partido verticalmente
           let prefixParts = [];
-
-          // Mirar 2 líneas hacia atrás por si está muy fragmentado
           for (let lookback = 2; lookback >= 1; lookback--) {
             if (i - lookback >= 0) {
               let prevL = lines[i - lookback].trim();
               if (
                 !prevL.startsWith('Serial') && 
                 !prevL.includes('€') && 
-                !prevL.includes('%') &&
-                !prevL.includes('0,00') &&
                 (prevL.endsWith('-') || prevL.startsWith('AJ-') || prevL.startsWith('FIBRA-') || prevL.startsWith('UV-') || prevL.startsWith('SF-') || prevL.startsWith('Al-') || prevL.length < 25)
               ) {
-                // Es un fragmento de SKU partido
                 prefixParts.push(...prevL.split(/\s+/).filter(Boolean));
               }
             }
@@ -651,29 +640,25 @@
           }
 
           if (prefixParts.length > 0) {
-            // Unir todos los fragmentos que pertenezcan a la referencia
             let skuArr = [];
             let descArr = [];
-
             prefixParts.forEach(token => {
-              // Si tiene guión, o es mayúsculas tipo código, o es un sufijo como W, B, S
               if (token.includes('-') || /^[A-Z0-9_-]{2,}$/.test(token) || /^[WBS]$/.test(token)) {
                 skuArr.push(token);
               } else {
                 descArr.push(token);
               }
             });
-
             sku = skuArr.join('').replace(/--+/g, '-');
             desc = descArr.join(' ');
           }
 
-          // Si tras la reconstrucción no se obtuvo un SKU válido, asignar fallback
           if (!sku || sku.length < 2) {
             sku = 'SKU-' + candidateEan.slice(-4);
           }
+          if (sku.startsWith('Al-')) sku = sku.replace('Al-', 'AJ-');
 
-          // Limpiar importes de la parte posterior para obtener cantidad y descripción
+          // Extraer cantidades limpiando precios
           let cleanAfter = afterEan
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -698,27 +683,22 @@
 
         } else {
           // ==========================================
-          // CASO B: Artículo SIN EAN (RG-BACKPACK, EBS9G...)
+          // CASO B: Artículo SIN EAN (EBS9G, mochilas...)
           // ==========================================
+          const hasPrice = line.includes('€') || line.includes('%') || line.includes('0,00');
+          if (!hasPrice) continue;
+
           let cleanLine = line
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
-            .replace(/,\s*€/g, ' ')
-            .replace(/%\s*,/g, ' ')
             .replace(/0,00/g, ' ')
-            .replace(/0\.0/g, ' ')
             .trim();
 
           const words = cleanLine.split(/\s+/).filter(Boolean);
           if (words.length === 0) continue;
 
           let rawSku = words[0].replace(/,/g, '').trim();
-
-          // Filtro estricto contra números de serie
-          const looksLikeSerial = /^[0-9a-fA-F]{8,}$/.test(rawSku) || /^(31ca|319e|318e|315c|31cc|0043|003e)/i.test(rawSku);
-          if (looksLikeSerial || rawSku.length < 3) {
-            continue;
-          }
+          if (/^[0-9a-fA-F]{8,}$/.test(rawSku) || rawSku.length < 3) continue;
 
           sku = rawSku;
           candidateEan = sku;
@@ -728,18 +708,14 @@
             const lastNum = numbers[numbers.length - 1];
             qty = parseInt(lastNum, 10) || 1;
             const lastNumIdx = cleanLine.lastIndexOf(lastNum);
-            if (lastNumIdx !== -1) {
-              cleanLine = cleanLine.substring(0, lastNumIdx).trim();
-            }
+            if (lastNumIdx !== -1) cleanLine = cleanLine.substring(0, lastNumIdx).trim();
           }
-
           desc = cleanLine.substring(sku.length).trim() || sku;
         }
 
-        // Normalizar SKU: si se generó "Al-" en vez de "AJ-", corregir tipografía OCR
-        if (sku.startsWith('Al-')) sku = sku.replace('Al-', 'AJ-');
+        if (!sku || sku === 'SKU-') continue;
 
-        // 4. Consolidar por EAN o por Referencia (sumar cantidades si ya existe)
+        // Consolidación de unidades por EAN o por Referencia
         const existingItem = tempParsedItems.find(item => item.ean === candidateEan || item.sku === sku);
         if (existingItem) {
           existingItem.expected += qty;
