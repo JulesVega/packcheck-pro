@@ -56,7 +56,6 @@
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text-main); margin: 0; padding: 12px; transition: background 0.2s, color 0.2s; }
 
-    /* Cabecera Corporativa */
     header {
       background: var(--surface);
       border: 1px solid var(--surface-border);
@@ -109,7 +108,6 @@
     .btn-qr { background: #7c3aed; }
     .btn-camera { background: #0891b2; }
 
-    /* Feedback visual de escaneo */
     #feedback {
       height: 38px;
       line-height: 38px;
@@ -122,7 +120,6 @@
       animation: fadeIn 0.15s ease-out;
     }
 
-    /* Panel de KPIs */
     .card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
     .kpi-box {
@@ -135,7 +132,6 @@
     .kpi-val { font-size: 1.4rem; font-weight: 800; }
     .kpi-label { font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; }
 
-    /* Barra de Foco Activo */
     #focusNotice {
       display: none;
       background: var(--surface-card);
@@ -148,11 +144,9 @@
       justify-content: space-between;
     }
 
-    /* Visor de Cámara */
     #camera-container { display: none; text-align: center; margin-bottom: 12px; }
     #reader { width: 100%; max-width: 440px; margin: auto; border-radius: 8px; overflow: hidden; }
 
-    /* Filtros y búsqueda */
     .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
     .filter-bar input {
       flex: 1;
@@ -176,7 +170,6 @@
     }
     .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-    /* Filas del Checklist */
     .item-list { display: flex; flex-direction: column; gap: 8px; }
     .item-row {
       background: var(--surface);
@@ -194,17 +187,10 @@
     .item-row.done { border-left-color: var(--success); background: var(--success-bg); opacity: 0.82; }
     .item-row.overflow { border-left-color: var(--danger); background: var(--danger-bg); }
 
-    /* Destello temporal que se apaga suavemente */
     @keyframes scanFlash {
-      0% {
-        box-shadow: 0 0 0 5px var(--spotlight-border), 0 0 22px var(--spotlight-border);
-      }
-      70% {
-        box-shadow: 0 0 0 3px var(--spotlight-border), 0 0 10px var(--spotlight-glow);
-      }
-      100% {
-        box-shadow: none;
-      }
+      0% { box-shadow: 0 0 0 5px var(--spotlight-border), 0 0 22px var(--spotlight-border); }
+      70% { box-shadow: 0 0 0 3px var(--spotlight-border), 0 0 10px var(--spotlight-glow); }
+      100% { box-shadow: none; }
     }
 
     .item-row.spotlight {
@@ -219,7 +205,6 @@
     .item-sku { font-size: 0.72rem; font-weight: 800; font-family: monospace; color: var(--brand-gold); }
     .item-desc { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
 
-    /* Botón interactivo de EAN / Código */
     .ean-btn {
       display: inline-flex;
       align-items: center;
@@ -238,7 +223,6 @@
     }
     .ean-btn:hover { border-color: var(--spotlight-border); color: var(--spotlight-border); }
 
-    /* Caja de Cantidades Interactiva */
     .qty-display { 
       text-align: center; 
       min-width: 90px;
@@ -270,7 +254,6 @@
     }
     .qty-status { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 3px; }
 
-    /* Controles táctiles grandes */
     .touch-controls { display: flex; gap: 4px; }
     .btn-touch {
       width: 44px;
@@ -289,7 +272,6 @@
     .btn-touch:active { background: var(--surface-border); }
     .btn-check-all { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 
-    /* Modales */
     .modal-backdrop {
       display: none;
       position: fixed;
@@ -313,7 +295,6 @@
     .modal-card table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85rem; }
     .modal-card th, .modal-card td { border: 1px solid var(--surface-border); padding: 8px; text-align: left; }
 
-    /* Modal de Pedido Completado */
     .complete-box { text-align: center; padding: 10px 0; }
     .complete-icon {
       font-size: 3.5rem;
@@ -351,21 +332,17 @@
     </div>
   </header>
 
-  <!-- Visor de Cámara -->
   <div id="camera-container" class="card">
     <div id="reader"></div>
   </div>
 
-  <!-- Banner de escaneo -->
   <div id="feedback"></div>
 
-  <!-- Foco activo -->
   <div id="focusNotice">
     <span>🔍 Localizado: <strong id="focusItemName">---</strong></span>
     <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="clearSpotlight()">Quitar Foco</button>
   </div>
 
-  <!-- KPIs de verificación -->
   <div class="card">
     <div class="kpi-grid">
       <div class="kpi-box">
@@ -383,7 +360,6 @@
     </div>
   </div>
 
-  <!-- Barra de Filtros -->
   <div class="filter-bar">
     <input type="text" id="searchInput" placeholder="Filtrar por SKU, EAN o descripción..." oninput="renderList()">
     <button class="chip active" onclick="setFilter('all', this)">Todos</button>
@@ -392,14 +368,12 @@
     <button class="chip" onclick="setFilter('overflow', this)">Excesos</button>
   </div>
 
-  <!-- Contenedor del listado -->
   <div class="item-list" id="checklistContainer">
     <div class="card" style="text-align: center; color: var(--text-muted); padding: 30px;">
       Carga un albarán PDF de Odoo o un CSV para comenzar. También puedes pistolear un código <strong>QR de Picking</strong> con la PDA.
     </div>
   </div>
 
-  <!-- Modal de Revisión / Confirmación de Albarán -->
   <div id="previewModal" class="modal-backdrop">
     <div class="modal-card">
       <h3>Artículos Detectados en el Albarán</h3>
@@ -414,7 +388,6 @@
     </div>
   </div>
 
-  <!-- Modal de Código QR para Picking -->
   <div id="qrModal" class="modal-backdrop">
     <div class="modal-card" style="text-align: center;">
       <h3>QR de Picking de la Orden</h3>
@@ -429,7 +402,6 @@
     </div>
   </div>
 
-  <!-- MODAL: Pedido Completado al 100% -->
   <div id="orderCompleteModal" class="modal-backdrop">
     <div class="modal-card complete-box">
       <div class="complete-icon">🎉</div>
@@ -474,7 +446,6 @@
     let orderFinishedNotified = false;
     let currentOrderName = 'Albarán Visiotech';
 
-    // --- Motor de Audio ---
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -524,7 +495,6 @@
       }
     }
 
-    // --- Tema Claro / Oscuro ---
     function initTheme() {
       const saved = localStorage.getItem('packcheck_theme') || 'dark';
       applyTheme(saved);
@@ -549,7 +519,6 @@
     }
     initTheme();
 
-    // --- Carga de Archivos ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -579,7 +548,7 @@
           const itemsByY = {};
           textContent.items.forEach(item => {
             const y = Math.round(item.transform[5]);
-            let foundY = Object.keys(itemsByY).find(key => Math.abs(key - y) <= 3);
+            let foundY = Object.keys(itemsByY).find(key => Math.abs(key - y) <= 4);
             if (!foundY) {
               foundY = y;
               itemsByY[foundY] = [];
@@ -601,6 +570,7 @@
       }
     }
 
+    // --- RECONSTRUCTOR INTELIGENTE DE LÍNEAS AUDITADO ---
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
       const eanRegex = /\b(\d{8}|\d{12,14})\b/;
@@ -609,7 +579,7 @@
         let line = lines[i].trim();
         if (!line) continue;
 
-        // 1. Omitir cabeceras, pies de página o textos estáticos del albarán
+        // 1. Omitir textos fijos de plantilla
         if (
           line.startsWith('Serial') ||
           line.includes('VISIOTECH') || 
@@ -627,19 +597,18 @@
           continue;
         }
 
-        // 2. Comprobar si contiene precios o importes (condición de fila de tabla)
+        // 2. Comprobar si contiene precios o importes
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
         if (!hasPriceOrDiscount) {
           continue;
         }
 
-        // Filtro de seguridad: si la línea contiene múltiples comas de series (ej: "31ca05a3191, 31ca01e1191..."), es un bloque Serial fusionado
+        // Filtro anti-series fusionados
         const commaCount = (line.match(/,/g) || []).length;
         if (commaCount > 3) {
           continue;
         }
 
-        // 3. Extracción de datos
         const eanMatch = line.match(eanRegex);
         let candidateEan = '';
         let sku = '';
@@ -647,7 +616,7 @@
         let qty = 1;
 
         if (eanMatch) {
-          // --- CASO A: Artículo con código de barras EAN numérico ---
+          // --- CASO A: Artículo con código EAN numérico ---
           candidateEan = eanMatch[1];
           if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
 
@@ -655,14 +624,49 @@
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          sku = 'SKU-' + candidateEan.slice(-4);
-          let descPrefix = '';
-          if (beforeEan.length > 0) {
-            const beforeWords = beforeEan.split(/\s+/);
-            sku = beforeWords[beforeWords.length - 1];
-            descPrefix = beforeWords.slice(0, -1).join(' ');
+          // Reconstruir si el SKU viene partido en renglones anteriores (ej: "AJ-" o "AJ- MOTIONCAMOUTDOOR-")
+          let candidateSkuWords = [];
+          if (i > 0) {
+            let prevLine = lines[i - 1].trim();
+            if (
+              !prevLine.startsWith('Serial') && 
+              !prevLine.includes('€') && 
+              !prevLine.includes('%') &&
+              (prevLine.endsWith('-') || prevLine.startsWith('AJ-') || prevLine.startsWith('FIBRA-') || prevLine.startsWith('UV-') || prevLine.startsWith('SF-'))
+            ) {
+              candidateSkuWords.push(...prevLine.split(/\s+/));
+            }
           }
 
+          if (beforeEan.length > 0) {
+            candidateSkuWords.push(...beforeEan.split(/\s+/));
+          }
+
+          // Armado y normalización del SKU
+          if (candidateSkuWords.length > 0) {
+            let skuParts = [];
+            let k = candidateSkuWords.length - 1;
+            skuParts.unshift(candidateSkuWords[k]);
+            k--;
+
+            while (k >= 0) {
+              const curr = candidateSkuWords[k];
+              const next = skuParts[0];
+              if (curr.endsWith('-') || next.startsWith('-') || next.length <= 2 || curr.length <= 3) {
+                skuParts.unshift(curr);
+                k--;
+              } else {
+                break;
+              }
+            }
+
+            sku = skuParts.join('').replace(/\s+/g, '');
+            desc = candidateSkuWords.slice(0, k + 1).join(' ');
+          } else {
+            sku = 'SKU-' + candidateEan.slice(-4);
+          }
+
+          // Extraer cantidades
           let cleanAfter = afterEan
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -673,22 +677,20 @@
             .trim();
 
           const numbers = cleanAfter.match(/\b\d+\b/g);
-          desc = cleanAfter;
-
           if (numbers && numbers.length > 0) {
             const lastNum = numbers[numbers.length - 1];
             qty = parseInt(lastNum, 10) || 1;
-            const lastNumIdx = desc.lastIndexOf(lastNum);
+            const lastNumIdx = cleanAfter.lastIndexOf(lastNum);
             if (lastNumIdx !== -1) {
-              desc = desc.substring(0, lastNumIdx).trim();
+              cleanAfter = cleanAfter.substring(0, lastNumIdx).trim();
             }
           }
 
-          desc = (descPrefix + ' ' + desc).replace(/\s+/g, ' ').trim();
+          desc = (desc + ' ' + cleanAfter).replace(/\s+/g, ' ').trim();
           if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
 
         } else {
-          // --- CASO B: Artículo SIN EAN (ej. RG-BACKPACK) ---
+          // --- CASO B: Artículo SIN EAN (ej. RG-BACKPACK, EBS9G-2P-63A) ---
           let cleanLine = line
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -703,15 +705,14 @@
 
           let rawSku = words[0].replace(/,/g, '').trim();
 
-          // FILTRO ESTRICTO CONTRA FRAGMENTOS DE NÚMEROS DE SERIE:
-          // Un SKU real no debe ser un código hexadecimal de serie (ej: 31ca05a3191) ni empezar por patrones de series
+          // Filtro estricto contra números de serie
           const looksLikeSerial = /^[0-9a-fA-F]{8,}$/.test(rawSku) || /^(31ca|319e|318e|315c|31cc|0043|003e)/i.test(rawSku);
           if (looksLikeSerial || rawSku.length < 3) {
-            continue; // Se descarta: es basura de un número de serie
+            continue;
           }
 
           sku = rawSku;
-          candidateEan = sku; // Se usa el propio SKU como identificador para pistolear
+          candidateEan = sku;
 
           const numbers = cleanLine.match(/\b\d+\b/g);
           if (numbers && numbers.length > 0) {
@@ -726,10 +727,10 @@
           desc = cleanLine.substring(sku.length).trim() || sku;
         }
 
-        // Validación final: SKU no puede estar vacío ni contener solo símbolos
+        // Validación de coherencia
         if (!sku || sku === 'SKU-' || sku.trim().length < 2) continue;
 
-        // 4. Consolidación de duplicados
+        // 4. Consolidación de líneas idénticas (sumar cantidades)
         const existingItem = tempParsedItems.find(item => item.ean === candidateEan || item.sku === sku);
         if (existingItem) {
           existingItem.expected += qty;
@@ -817,7 +818,6 @@
       reader.readAsText(file);
     }
 
-    // --- Escáner Global HID (Pistolas Láser en PDA / USB) ---
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
 
@@ -862,7 +862,6 @@
       }
     }
 
-    // --- ENVÍO 100% AUTOMÁTICO EN SEGUNDO PLANO A GMAIL ---
     async function sendSilentCompletionEmail() {
       const statusLabel = document.getElementById('emailStatusText');
       if (statusLabel) {
@@ -925,7 +924,6 @@
       sendSilentCompletionEmail();
     }
 
-    // --- Comprobación de Pedido Finalizado al 100% ---
     function checkOrderCompletion() {
       if (items.length === 0) return;
 
@@ -951,7 +949,6 @@
       }
     }
 
-    // --- Protocolo QR de Picking ---
     function generateOrderQR() {
       if (items.length === 0) return alert('Primero carga un albarán para generar el QR.');
 
@@ -1003,7 +1000,6 @@
       }
     }
 
-    // --- Cámara ---
     function toggleCamera() {
       const container = document.getElementById('camera-container');
       if (cameraActive) {
@@ -1028,7 +1024,6 @@
       }
     }
 
-    // --- Spotlight Temporal (Solo 1 fila activa) ---
     function triggerSpotlight(ean) {
       playBeep('locate');
       applySpotlight(ean);
@@ -1069,7 +1064,6 @@
       renderList();
     }
 
-    // --- Acciones de Cantidad (+1, -1, Check Todo y EDICIÓN MANUAL) ---
     function adjustQty(ean, delta) {
       const item = items.find(i => i.ean === ean);
       if (item && (item.scanned + delta >= 0)) {
@@ -1114,7 +1108,6 @@
       }
     }
 
-    // --- Renderizado y Ordenación ---
     function setFilter(type, el) {
       currentFilter = type;
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
