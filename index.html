@@ -430,9 +430,6 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // ==========================================
-    // PASARELA DE ENVÍO DIRECTO (GOOGLE APPS SCRIPT)
-    // ==========================================
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXFrKdyI2FV_UBvu6o_Sl3vXEeoRVr5wy0Xfllv88p9eHopsoSzJ5pxFB3UqOiZhyfdw/exec';
     const DESTINATARIO_EMAIL = 'jlmoralejo@visiotechsecurity.com';
 
@@ -571,15 +568,13 @@
     }
 
     // ============================================================
-    // MOTOR DE EXTRACCIÓN CON BUFFER ACUMULADOR DE SKU
+    // MOTOR DE EXTRACCIÓN CON RECONSTRUCCIÓN EXACTA DE SKU Y CANTIDAD
     // ============================================================
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
       const eanRegex = /\b(\d{8}|\d{12,14})\b/;
 
-      let skuBuffer = '';
-      let pendingEan = '';
-      let pendingDesc = '';
+      let skuPrefixBuffer = '';
 
       for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
@@ -614,57 +609,59 @@
         const commaCount = (line.match(/,/g) || []).length;
         if (commaCount > 3) continue;
 
+        // Si la línea es solo una parte de SKU que termina en guion (ej: "AJ-INTERNALBATTERY-NB-")
+        if (line.endsWith('-') && !line.includes(' ')) {
+          skuPrefixBuffer += line;
+          continue;
+        }
+
         const eanMatch = line.match(eanRegex);
         const hasPriceOrDiscount = line.includes('€') || line.includes('%') || line.includes('0,00') || line.includes('0.0');
 
-        // Si la línea tiene un EAN válido que no sea fecha ni teléfono, guardarlo en el buffer
-        if (eanMatch) {
-          const candidate = eanMatch[1];
-          if (!candidate.startsWith('2026') && candidate !== '0399300408') {
-            pendingEan = candidate;
-          }
-        }
-
-        let words = line.split(/\s+/).filter(Boolean);
-        if (words.length === 0) continue;
-
-        // Si tenemos un buffer activo o la línea parece continuar un SKU partido
-        let firstWord = words[0];
-
-        // LÓGICA DE ACUMULADOR:
-        if (firstWord.endsWith('-')) {
-          // El SKU sigue partido (ej: AJ- o MOTIONCAMOUTDOOR-)
-          skuBuffer += firstWord;
-          continue;
-        } else if (skuBuffer.length > 0) {
-          // Si traíamos un buffer con '-', añadimos el sufijo final (ej: W o B)
-          skuBuffer += firstWord;
-          firstWord = skuBuffer;
-          skuBuffer = ''; // Liberamos el buffer una vez completado
-        }
-
-        // Si no hay EAN ni importes y no es un producto sin EAN reconocido, omitir
-        if (!pendingEan && !hasPriceOrDiscount) {
-          const looksLikeDirectSku = /^[A-Z0-9]{2,}-[A-Z0-9-]+$/.test(firstWord) || firstWord === 'RG-BACKPACK';
+        if (!eanMatch && !hasPriceOrDiscount) {
+          const words = line.split(/\s+/).filter(Boolean);
+          const looksLikeDirectSku = words.length >= 2 && (/^[A-Z0-9]{2,}-[A-Z0-9-]+$/.test(words[0]) || words[0] === 'RG-BACKPACK');
           if (!looksLikeDirectSku) continue;
         }
 
-        let candidateEan = pendingEan;
-        let sku = firstWord;
-        let qty = 1;
+        let candidateEan = '';
+        let sku = '';
         let desc = '';
+        let qty = 1;
 
-        if (candidateEan) {
-          // Reconstrucción del resto de la fila tras el EAN
-          let afterEan = '';
-          if (line.includes(candidateEan)) {
-            afterEan = line.split(candidateEan)[1] || '';
+        if (eanMatch) {
+          candidateEan = eanMatch[1];
+          if (candidateEan.startsWith('2026') || candidateEan === '0399300408') continue;
+
+          const parts = line.split(candidateEan);
+          let beforeEan = parts[0].trim();
+          let afterEan = parts[1] ? parts[1].trim() : '';
+
+          // Reconstrucción del SKU
+          if (beforeEan.length > 0) {
+            let bWords = beforeEan.split(/\s+/).filter(Boolean);
+            let combined = skuPrefixBuffer + bWords[0];
+            skuPrefixBuffer = '';
+
+            // Si antes del EAN había más de una palabra y terminaba en guion
+            if (bWords.length >= 2 && bWords[bWords.length - 2].endsWith('-')) {
+              sku = bWords[bWords.length - 2] + bWords[bWords.length - 1];
+            } else {
+              sku = combined;
+            }
+          } else if (skuPrefixBuffer) {
+            sku = skuPrefixBuffer;
+            skuPrefixBuffer = '';
           } else {
-            afterEan = line; // El EAN vino en la línea de arriba
+            sku = 'SKU-' + candidateEan.slice(-4);
           }
 
+          // Normalizar formato
+          sku = sku.replace(/W-$/, '-W').replace(/B-$/, '-B').replace(/S-$/, '-S');
+          if (sku.startsWith('Al-')) sku = sku.replace('Al-', 'AJ-');
+
+          // Limpiar el texto posterior para extraer descripción y cantidad exacta
           let cleanAfter = afterEan
-            .replace(sku, ' ')
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
             .replace(/,\s*€/g, ' ')
@@ -673,6 +670,7 @@
             .replace(/0\.0/g, ' ')
             .trim();
 
+          // La cantidad siempre es el ÚLTIMO número entero al final de la celda
           const numbers = cleanAfter.match(/\b\d+\b/g);
           if (numbers && numbers.length > 0) {
             const lastNum = numbers[numbers.length - 1];
@@ -683,13 +681,15 @@
             }
           }
 
-          desc = cleanAfter;
-          pendingEan = ''; // Vaciamos para el siguiente artículo
+          desc = cleanAfter || ('Artículo ' + sku);
+
         } else {
-          // Caso sin EAN (ej: ZK-BIOTIME8-2, RG-BACKPACK, EBS9G)
+          // Caso sin EAN (ej. ZK-BIOTIME8-2, RG-BACKPACK, EBS9G)
+          const words = line.split(/\s+/).filter(Boolean);
+          sku = words[0].replace(/,/g, '').trim();
           candidateEan = sku;
-          let cleanLine = line
-            .replace(sku, ' ')
+
+          let cleanLine = line.substring(sku.length).trim()
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
             .replace(/0,00/g, ' ')
@@ -706,12 +706,7 @@
           desc = cleanLine || sku;
         }
 
-        // Normalizaciones finales
-        sku = sku.replace(/W-$/, '-W').replace(/B-$/, '-B').replace(/S-$/, '-S');
-        if (sku.startsWith('Al-')) sku = sku.replace('Al-', 'AJ-');
-        if (!desc || desc.length < 2) desc = 'Artículo ' + sku;
-
-        // Descartar si es un residuo de serial
+        // Filtro contra números de serie
         const looksLikeSerial = /^[0-9a-fA-F]{8,}$/.test(sku) || /^(31ca|319e|318e|315c|31cc|0043|003e)/i.test(sku);
         if (looksLikeSerial || sku.length < 3) continue;
 
