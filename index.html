@@ -430,6 +430,9 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+    // ==========================================
+    // PASARELA DE ENVÍO DIRECTO (GOOGLE APPS SCRIPT)
+    // ==========================================
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXFrKdyI2FV_UBvu6o_Sl3vXEeoRVr5wy0Xfllv88p9eHopsoSzJ5pxFB3UqOiZhyfdw/exec';
     const DESTINATARIO_EMAIL = 'jlmoralejo@visiotechsecurity.com';
 
@@ -568,7 +571,7 @@
     }
 
     // ============================================================
-    // MOTOR DE EXTRACCIÓN CON RECONSTRUCCIÓN EXACTA DE SKU Y CANTIDAD
+    // MOTOR DE EXTRACCIÓN CON RECONSTRUCCIÓN EXACTA DE SKU
     // ============================================================
     function extractItemsFromLines(lines) {
       tempParsedItems = [];
@@ -609,7 +612,7 @@
         const commaCount = (line.match(/,/g) || []).length;
         if (commaCount > 3) continue;
 
-        // Si la línea es solo una parte de SKU que termina en guion (ej: "AJ-INTERNALBATTERY-NB-")
+        // Si la línea es solo una parte de SKU que termina en guion (ej: "AJ-INTERNALBATTERY-NB-" o "UV-IPC2B14SE-ADF28KMC-WP-")[cite: 61]
         if (line.endsWith('-') && !line.includes(' ')) {
           skuPrefixBuffer += line;
           continue;
@@ -637,17 +640,18 @@
           let beforeEan = parts[0].trim();
           let afterEan = parts[1] ? parts[1].trim() : '';
 
-          // Reconstrucción del SKU
+          // Reconstrucción inteligente del SKU
           if (beforeEan.length > 0) {
             let bWords = beforeEan.split(/\s+/).filter(Boolean);
-            let combined = skuPrefixBuffer + bWords[0];
-            skuPrefixBuffer = '';
-
-            // Si antes del EAN había más de una palabra y terminaba en guion
-            if (bWords.length >= 2 && bWords[bWords.length - 2].endsWith('-')) {
+            
+            if (skuPrefixBuffer.length > 0) {
+              // Empalmar el buffer pendiente con la primera palabra (ej: "...-NB-" + "72V95AH" o "...-WP-" + "I1")[cite: 61]
+              sku = skuPrefixBuffer + bWords[0];
+              skuPrefixBuffer = '';
+            } else if (bWords.length >= 2 && bWords[bWords.length - 2].endsWith('-')) {
               sku = bWords[bWords.length - 2] + bWords[bWords.length - 1];
             } else {
-              sku = combined;
+              sku = bWords[0];
             }
           } else if (skuPrefixBuffer) {
             sku = skuPrefixBuffer;
@@ -656,11 +660,11 @@
             sku = 'SKU-' + candidateEan.slice(-4);
           }
 
-          // Normalizar formato
-          sku = sku.replace(/W-$/, '-W').replace(/B-$/, '-B').replace(/S-$/, '-S');
+          // Solo normalizar sufijos de una letra suelta si viene como -W, -B, -S (sin tocar palabras compuestas)
+          sku = sku.replace(/(^|[A-Z0-9])W-$/, '$1-W').replace(/(^|[A-Z0-9])B-$/, '$1-B').replace(/(^|[A-Z0-9])S-$/, '$1-S');
           if (sku.startsWith('Al-')) sku = sku.replace('Al-', 'AJ-');
 
-          // Limpiar el texto posterior para extraer descripción y cantidad exacta
+          // Limpiar importes monetarios para aislar cantidad y descripción
           let cleanAfter = afterEan
             .replace(/\b\d+([.,]\d+)?\s*%/g, ' ')
             .replace(/\b\d+([.,]\d+)?\s*€/g, ' ')
@@ -670,7 +674,7 @@
             .replace(/0\.0/g, ' ')
             .trim();
 
-          // La cantidad siempre es el ÚLTIMO número entero al final de la celda
+          // La cantidad en las hojas de picking es el número entero final
           const numbers = cleanAfter.match(/\b\d+\b/g);
           if (numbers && numbers.length > 0) {
             const lastNum = numbers[numbers.length - 1];
